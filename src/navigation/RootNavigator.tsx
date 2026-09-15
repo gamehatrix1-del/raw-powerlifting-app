@@ -1,11 +1,12 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useAuth } from "../context/AuthContext";
+import IntakeScreen from "../screens/athlete/IntakeScreen";
 import AthleteNavigator from "./AthleteNavigator";
 import AuthNavigator from "./AuthNavigator";
 import CoachNavigator from "./CoachNavigator";
 
 export default function RootNavigator() {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, athleteProfile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -19,7 +20,15 @@ export default function RootNavigator() {
     return <AuthNavigator />;
   }
 
-  return profile.role === "coach" ? <CoachNavigator /> : <AthleteNavigator />;
+  if (profile.role === "coach") {
+    return <CoachNavigator />;
+  }
+
+  if (!athleteProfile) {
+    return <IntakeScreen />;
+  }
+
+  return <AthleteNavigator />;
 }
 
 const styles = StyleSheet.create({
