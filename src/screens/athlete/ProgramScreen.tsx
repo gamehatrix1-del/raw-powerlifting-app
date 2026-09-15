@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -33,10 +34,12 @@ export default function ProgramScreen({ navigation }: any) {
   >({});
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     if (!session) return;
     setLoading(true);
+    setError(false);
 
     const { data: latestProgram, error: programError } = await supabase
       .from("programs")
@@ -48,6 +51,7 @@ export default function ProgramScreen({ navigation }: any) {
 
     if (programError) {
       console.error("Failed to load program", programError);
+      setError(true);
       setLoading(false);
       return;
     }
@@ -69,6 +73,7 @@ export default function ProgramScreen({ navigation }: any) {
 
     if (daysError) {
       console.error("Failed to load program days", daysError);
+      setError(true);
       setLoading(false);
       return;
     }
@@ -123,6 +128,14 @@ export default function ProgramScreen({ navigation }: any) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load your program." onRetry={load} />
       </View>
     );
   }

@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { supabase } from "../../lib/supabase";
 import { thisMonday } from "../../lib/dates";
 import { colors } from "../../theme/colors";
@@ -20,9 +21,11 @@ interface AthleteRow {
 export default function DashboardScreen({ navigation }: any) {
   const [rows, setRows] = useState<AthleteRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(false);
 
     const { data: athletes, error: athletesError } = await supabase
       .from("profiles")
@@ -32,6 +35,7 @@ export default function DashboardScreen({ navigation }: any) {
 
     if (athletesError) {
       console.error("Failed to load athletes", athletesError);
+      setError(true);
       setLoading(false);
       return;
     }
@@ -82,6 +86,8 @@ export default function DashboardScreen({ navigation }: any) {
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+      ) : error ? (
+        <ErrorState message="Couldn't load athletes." onRetry={load} />
       ) : (
         <FlatList
           data={rows}

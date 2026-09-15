@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import RazorpayCheckout from "react-native-razorpay";
+import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { addInterval } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -30,24 +31,38 @@ export default function MembershipScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
     setLoading(true);
+    setError(false);
 
-    const { data: plansData } = await supabase
+    const { data: plansData, error: plansError } = await supabase
       .from("plans")
       .select("*")
       .eq("is_active", true)
       .order("price_inr", { ascending: true });
+    if (plansError) {
+      console.error("Failed to load plans", plansError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
     setPlans((plansData as Plan[]) ?? []);
 
-    const { data: paymentsData } = await supabase
+    const { data: paymentsData, error: paymentsError } = await supabase
       .from("payments")
       .select("*, plans(name, billing_interval)")
       .eq("athlete_id", session.user.id)
       .order("created_at", { ascending: false });
+    if (paymentsError) {
+      console.error("Failed to load payments", paymentsError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
 
     setPayments(
       (paymentsData ?? []).map((row: any) => ({
@@ -109,6 +124,14 @@ export default function MembershipScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load your membership." onRetry={load} />
       </View>
     );
   }

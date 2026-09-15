@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { addInterval } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../theme/colors";
@@ -21,21 +22,24 @@ export default function ReportingScreen() {
   const [monthRevenue, setMonthRevenue] = useState(0);
   const [topLifts, setTopLifts] = useState<TopLift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-
-      const { count: athleteCount } = await supabase
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { count: athleteCount, error: athleteError } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .eq("role", "athlete");
+      if (athleteError) throw athleteError;
       setTotalAthletes(athleteCount ?? 0);
 
-      const { data: paidPayments } = await supabase
+      const { data: paidPayments, error: paymentsError } = await supabase
         .from("payments")
         .select("athlete_id, amount_inr, paid_at, plans(billing_interval)")
         .eq("status", "paid");
+      if (paymentsError) throw paymentsError;
 
       const today = new Date().toISOString().slice(0, 10);
       const activeAthleteIds = new Set<string>();
@@ -59,9 +63,10 @@ export default function ReportingScreen() {
       setActiveMembers(activeAthleteIds.size);
       setMonthRevenue(revenue);
 
-      const { data: programExercises } = await supabase
+      const { data: programExercises, error: exercisesError } = await supabase
         .from("program_exercises")
         .select("exercises(name)");
+      if (exercisesError) throw exercisesError;
 
       const counts = new Map<string, number>();
       for (const row of programExercises ?? []) {
@@ -75,15 +80,30 @@ export default function ReportingScreen() {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5)
       );
-
+    } catch (err) {
+      console.error("Failed to load reporting data", err);
+      setError(true);
+    } finally {
       setLoading(false);
-    })();
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load reporting data." onRetry={load} />
       </View>
     );
   }

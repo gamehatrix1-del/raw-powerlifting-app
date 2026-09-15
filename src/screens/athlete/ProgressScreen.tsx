@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import LineChart from "../../components/LineChart";
 import { useAuth } from "../../context/AuthContext";
 import { dateKey } from "../../lib/dates";
@@ -33,9 +34,12 @@ export default function ProgressScreen() {
   const { width } = useWindowDimensions();
   const [series, setSeries] = useState<Record<string, SeriesPoint[]>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!session) return;
+    setLoading(true);
+    setError(false);
 
     supabase
       .from("workout_logs")
@@ -44,9 +48,10 @@ export default function ProgressScreen() {
       .not("weight", "is", null)
       .not("reps", "is", null)
       .order("logged_at", { ascending: true })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Failed to load workout logs", error);
+      .then(({ data, error: loadError }) => {
+        if (loadError) {
+          console.error("Failed to load workout logs", loadError);
+          setError(true);
           setLoading(false);
           return;
         }
@@ -79,10 +84,22 @@ export default function ProgressScreen() {
       });
   }, [session]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load progress." onRetry={load} />
       </View>
     );
   }

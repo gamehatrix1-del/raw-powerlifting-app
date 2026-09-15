@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { computeStreak, dateKey, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -20,18 +21,27 @@ export default function HomeScreen({ navigation }: any) {
   const [doneThisWeek, setDoneThisWeek] = useState(0);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     if (!session) return;
     setLoading(true);
+    setError(false);
 
-    const { data: latestProgram } = await supabase
+    const { data: latestProgram, error: programError } = await supabase
       .from("programs")
       .select("*")
       .eq("athlete_id", session.user.id)
       .order("week_start_date", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (programError) {
+      console.error("Failed to load program", programError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
 
     setProgram((latestProgram as Program) ?? null);
 
@@ -79,6 +89,14 @@ export default function HomeScreen({ navigation }: any) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load your dashboard." onRetry={load} />
       </View>
     );
   }

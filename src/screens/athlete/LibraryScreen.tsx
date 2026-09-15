@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../theme/colors";
 import { Exercise, ExerciseCategory } from "../../types/exercise";
@@ -23,20 +24,31 @@ const FILTERS: Array<ExerciseCategory | "all"> = [
 export default function LibraryScreen() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ExerciseCategory | "all">("all");
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     supabase
       .from("exercises")
       .select("*")
       .order("name", { ascending: true })
-      .then(({ data, error }) => {
-        if (error) console.error("Failed to load exercises", error);
-        setExercises((data as Exercise[]) ?? []);
+      .then(({ data, error: loadError }) => {
+        if (loadError) {
+          console.error("Failed to load exercises", loadError);
+          setError(true);
+        } else {
+          setExercises((data as Exercise[]) ?? []);
+        }
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const filtered = useMemo(
     () =>
@@ -81,6 +93,8 @@ export default function LibraryScreen() {
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+      ) : error ? (
+        <ErrorState message="Couldn't load exercises." onRetry={load} />
       ) : (
         <FlatList
           data={filtered}

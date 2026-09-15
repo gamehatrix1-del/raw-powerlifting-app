@@ -1,5 +1,5 @@
 import Slider from "@react-native-community/slider";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../theme/colors";
@@ -45,68 +46,74 @@ export default function WorkoutLogScreen({ route }: any) {
   const [exercises, setExercises] = useState<ExerciseWithTarget[]>([]);
   const [setInputs, setSetInputs] = useState<Record<string, SetInput[]>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [restRemaining, setRestRemaining] = useState(0);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!session) return;
+    setLoading(true);
+    setError(false);
 
-    (async () => {
-      const { data: programExercises, error } = await supabase
-        .from("program_exercises")
-        .select("*, exercises(id, name, cue_text)")
-        .eq("program_day_id", programDayId)
-        .order("order_index", { ascending: true });
+    const { data: programExercises, error: exercisesError } = await supabase
+      .from("program_exercises")
+      .select("*, exercises(id, name, cue_text)")
+      .eq("program_day_id", programDayId)
+      .order("order_index", { ascending: true });
 
-      if (error) {
-        console.error("Failed to load exercises", error);
-        setLoading(false);
-        return;
-      }
-
-      const results: ExerciseWithTarget[] = [];
-      const inputs: Record<string, SetInput[]> = {};
-
-      for (const row of programExercises ?? []) {
-        const { data: lastLog } = await supabase
-          .from("workout_logs")
-          .select("weight, reps, rpe")
-          .eq("athlete_id", session.user.id)
-          .eq("exercise_id", row.exercise_id)
-          .order("logged_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        const lastTime = lastLog
-          ? `${lastLog.weight ?? "—"}kg x ${lastLog.reps ?? "—"}${
-              lastLog.rpe ? ` @ RPE ${lastLog.rpe}` : ""
-            }`
-          : null;
-
-        results.push({
-          programExerciseId: row.id,
-          exerciseId: row.exercise_id,
-          name: row.exercises?.name ?? "Exercise",
-          cueText: row.exercises?.cue_text ?? null,
-          sets: row.sets,
-          reps: row.reps,
-          targetLoad: row.target_load,
-          targetRpe: row.target_rpe,
-          lastTime,
-        });
-
-        inputs[row.id] = Array.from({ length: row.sets }, () => ({
-          weight: "",
-          reps: "",
-          rpe: row.target_rpe ?? 8,
-          logged: false,
-        }));
-      }
-
-      setExercises(results);
-      setSetInputs(inputs);
+    if (exercisesError) {
+      console.error("Failed to load exercises", exercisesError);
+      setError(true);
       setLoading(false);
-    })();
+      return;
+    }
+
+    const results: ExerciseWithTarget[] = [];
+    const inputs: Record<string, SetInput[]> = {};
+
+    for (const row of programExercises ?? []) {
+      const { data: lastLog } = await supabase
+        .from("workout_logs")
+        .select("weight, reps, rpe")
+        .eq("athlete_id", session.user.id)
+        .eq("exercise_id", row.exercise_id)
+        .order("logged_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const lastTime = lastLog
+        ? `${lastLog.weight ?? "—"}kg x ${lastLog.reps ?? "—"}${
+            lastLog.rpe ? ` @ RPE ${lastLog.rpe}` : ""
+          }`
+        : null;
+
+      results.push({
+        programExerciseId: row.id,
+        exerciseId: row.exercise_id,
+        name: row.exercises?.name ?? "Exercise",
+        cueText: row.exercises?.cue_text ?? null,
+        sets: row.sets,
+        reps: row.reps,
+        targetLoad: row.target_load,
+        targetRpe: row.target_rpe,
+        lastTime,
+      });
+
+      inputs[row.id] = Array.from({ length: row.sets }, () => ({
+        weight: "",
+        reps: "",
+        rpe: row.target_rpe ?? 8,
+        logged: false,
+      }));
+    }
+
+    setExercises(results);
+    setSetInputs(inputs);
+    setLoading(false);
   }, [session, programDayId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   useEffect(() => {
     if (restRemaining <= 0) return;
@@ -162,6 +169,14 @@ export default function WorkoutLogScreen({ route }: any) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load this workout." onRetry={load} />
       </View>
     );
   }

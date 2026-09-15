@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../theme/colors";
@@ -21,16 +22,19 @@ export default function LibraryScreen() {
   const { session } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   const loadExercises = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    setError(false);
+    const { data, error: loadError } = await supabase
       .from("exercises")
       .select("*")
       .order("name", { ascending: true });
-    if (error) {
-      console.error("Failed to load exercises", error);
+    if (loadError) {
+      console.error("Failed to load exercises", loadError);
+      setError(true);
     } else {
       setExercises((data as Exercise[]) ?? []);
     }
@@ -77,6 +81,8 @@ export default function LibraryScreen() {
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
+      ) : error ? (
+        <ErrorState message="Couldn't load exercises." onRetry={loadExercises} />
       ) : (
         <FlatList
           data={exercises}

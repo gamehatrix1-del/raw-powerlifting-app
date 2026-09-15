@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import ErrorState from "../../components/ErrorState";
 import { supabase } from "../../lib/supabase";
 import { colors } from "../../theme/colors";
 import { Plan, PlanInterval } from "../../types/plan";
@@ -31,23 +32,35 @@ export default function PaymentsScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(false);
 
     const { data: plansData, error: plansError } = await supabase
       .from("plans")
       .select("*")
       .order("price_inr", { ascending: true });
-    if (plansError) console.error("Failed to load plans", plansError);
+    if (plansError) {
+      console.error("Failed to load plans", plansError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
     setPlans((plansData as Plan[]) ?? []);
 
     const { data: paymentsData, error: paymentsError } = await supabase
       .from("payments")
       .select("*, profiles(full_name), plans(name)")
       .order("created_at", { ascending: false });
-    if (paymentsError) console.error("Failed to load payments", paymentsError);
+    if (paymentsError) {
+      console.error("Failed to load payments", paymentsError);
+      setError(true);
+      setLoading(false);
+      return;
+    }
 
     setTransactions(
       (paymentsData ?? []).map((row: any) => ({
@@ -105,6 +118,14 @@ export default function PaymentsScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <ErrorState message="Couldn't load payments." onRetry={load} />
       </View>
     );
   }
