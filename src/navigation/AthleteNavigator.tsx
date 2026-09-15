@@ -1,6 +1,8 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import AthleteProgramStack from "./AthleteProgramStack";
+import { colors } from "../theme/colors";
 
 const Tab = createBottomTabNavigator();
 
@@ -9,16 +11,14 @@ export default function AthleteNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#E33A3A",
-        tabBarStyle: { backgroundColor: "#0B0B0C" },
+        tabBarActiveTintColor: colors.accent,
+        tabBarStyle: { backgroundColor: colors.background },
       }}
     >
       <Tab.Screen name="Home">
         {() => <PlaceholderScreen title="Home" />}
       </Tab.Screen>
-      <Tab.Screen name="Program">
-        {() => <PlaceholderScreen title="Weekly Program" />}
-      </Tab.Screen>
+      <Tab.Screen name="Program" component={AthleteProgramStack} />
       <Tab.Screen name="Progress">
         {() => <PlaceholderScreen title="Progress" />}
       </Tab.Screen>
