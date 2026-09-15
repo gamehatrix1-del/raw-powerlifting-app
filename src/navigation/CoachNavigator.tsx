@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import CoachDashboardStack from "./CoachDashboardStack";
 import LibraryScreen from "../screens/coach/LibraryScreen";
-import PlaceholderScreen from "../screens/PlaceholderScreen";
+import PaymentsScreen from "../screens/coach/PaymentsScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { colors } from "../theme/colors";
 
@@ -18,9 +18,7 @@ export default function CoachNavigator() {
     >
       <Tab.Screen name="Dashboard" component={CoachDashboardStack} />
       <Tab.Screen name="Library" component={LibraryScreen} />
-      <Tab.Screen name="Payments">
-        {() => <PlaceholderScreen title="Payments" />}
-      </Tab.Screen>
+      <Tab.Screen name="Payments" component={PaymentsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

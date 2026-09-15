@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/athlete/HomeScreen";
+import MembershipScreen from "../screens/athlete/MembershipScreen";
 import ProgressScreen from "../screens/athlete/ProgressScreen";
-import PlaceholderScreen from "../screens/PlaceholderScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import AthleteProgramStack from "./AthleteProgramStack";
 import { colors } from "../theme/colors";
@@ -20,9 +20,7 @@ export default function AthleteNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Program" component={AthleteProgramStack} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
-      <Tab.Screen name="Membership">
-        {() => <PlaceholderScreen title="Membership" />}
-      </Tab.Screen>
+      <Tab.Screen name="Membership" component={MembershipScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

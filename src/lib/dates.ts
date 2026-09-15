@@ -19,6 +19,16 @@ export function dateKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
+export function addInterval(
+  isoDate: string,
+  interval: "monthly" | "quarterly" | "yearly"
+): string {
+  const d = new Date(isoDate);
+  const months = interval === "monthly" ? 1 : interval === "quarterly" ? 3 : 12;
+  d.setMonth(d.getMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
 // Consecutive days (ending today or yesterday) present in loggedDateKeys.
 export function computeStreak(loggedDateKeys: Set<string>): number {
   const cursor = new Date();
