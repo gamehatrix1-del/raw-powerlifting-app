@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import RazorpayCheckout from "react-native-razorpay";
 import { useAuth } from "../../context/AuthContext";
 import { addInterval } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -29,6 +30,7 @@ export default function MembershipScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -66,11 +68,41 @@ export default function MembershipScreen() {
     load();
   }, [load]);
 
-  function handlePayNow(plan: Plan) {
-    Alert.alert(
-      "Checkout coming soon",
-      `${plan.name} — ₹${plan.price_inr}/${plan.billing_interval}. Razorpay checkout will be wired up here once it's ready.`
-    );
+  async function handlePayNow(plan: Plan) {
+    if (!session) return;
+    setPayingPlanId(plan.id);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-razorpay-order",
+        { body: { planId: plan.id } }
+      );
+      if (error) throw error;
+
+      await RazorpayCheckout.open({
+        key: data.keyId,
+        amount: data.amount,
+        currency: data.currency,
+        order_id: data.orderId,
+        name: "RAW@ Powerlifting Academy",
+        description: data.planName,
+        prefill: { email: session.user.email ?? undefined },
+        theme: { color: colors.accent },
+      });
+
+      // The razorpay-webhook Edge Function marks the payment "paid"
+      // server-side; give it a moment to land before refreshing.
+      setTimeout(load, 1500);
+      Alert.alert("Payment received", "Confirming with your coach shortly.");
+    } catch (err: any) {
+      if (err?.code !== undefined || err?.description) {
+        Alert.alert(
+          "Payment didn't go through",
+          err.description ?? "Please try again."
+        );
+      }
+    } finally {
+      setPayingPlanId(null);
+    }
   }
 
   if (loading) {
@@ -123,8 +155,16 @@ export default function MembershipScreen() {
               ₹{plan.price_inr} / {plan.billing_interval}
             </Text>
           </View>
-          <Pressable style={styles.payButton} onPress={() => handlePayNow(plan)}>
-            <Text style={styles.payButtonText}>Pay Now</Text>
+          <Pressable
+            style={styles.payButton}
+            onPress={() => handlePayNow(plan)}
+            disabled={payingPlanId === plan.id}
+          >
+            {payingPlanId === plan.id ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.payButtonText}>Pay Now</Text>
+            )}
           </Pressable>
         </View>
       ))}

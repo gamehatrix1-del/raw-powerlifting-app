@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RAW_POWERLIFTING_APP",
-    "slug": "RAW_POWERLIFTING_APP",
+    "slug": "gamer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "26f489db-870a-4e5f-b307-b29aec87eb3a"
+      }
+    },
+    "owner": "gamehatrix1s-team"
   }
 }
