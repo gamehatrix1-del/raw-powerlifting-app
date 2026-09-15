@@ -10,3 +10,26 @@ export function mondayOf(date: Date): string {
 export function thisMonday(): string {
   return mondayOf(new Date());
 }
+
+export function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function dateKey(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10);
+}
+
+// Consecutive days (ending today or yesterday) present in loggedDateKeys.
+export function computeStreak(loggedDateKeys: Set<string>): number {
+  const cursor = new Date();
+  if (!loggedDateKeys.has(cursor.toISOString().slice(0, 10))) {
+    cursor.setDate(cursor.getDate() - 1); // allow "today not logged yet"
+  }
+
+  let streak = 0;
+  while (loggedDateKeys.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
