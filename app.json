@@ -1,15 +1,17 @@
 {
   "expo": {
-    "name": "RAW_POWERLIFTING_APP",
+    "name": "RAW@ Powerlifting Academy",
     "slug": "gamer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rawpowerlifting.app"
     },
     "android": {
+      "package": "com.rawpowerlifting.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
