@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/athlete/HomeScreen";
+import ProgressScreen from "../screens/athlete/ProgressScreen";
 import PlaceholderScreen from "../screens/PlaceholderScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import AthleteProgramStack from "./AthleteProgramStack";
@@ -18,9 +19,7 @@ export default function AthleteNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Program" component={AthleteProgramStack} />
-      <Tab.Screen name="Progress">
-        {() => <PlaceholderScreen title="Progress" />}
-      </Tab.Screen>
+      <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Membership">
         {() => <PlaceholderScreen title="Membership" />}
       </Tab.Screen>
