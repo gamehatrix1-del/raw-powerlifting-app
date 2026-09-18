@@ -36,7 +36,7 @@ export default function LoginScreen({ navigation }: any) {
         style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.title}>RAW@ Powerlifting</Text>
+      <Text style={styles.title}>RPA</Text>
       <Text style={styles.subtitle}>Log in to continue</Text>
 
       <TextInput

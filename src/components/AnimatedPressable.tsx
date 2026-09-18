@@ -1,4 +1,4 @@
-import { ReactNode, useRef } from "react";
+import { useRef } from "react";
 import {
   Animated,
   Pressable,
@@ -7,43 +7,50 @@ import {
   ViewStyle,
 } from "react-native";
 
-interface Props extends Omit<PressableProps, "style" | "children"> {
+const AnimatedPressableBase = Animated.createAnimatedComponent(Pressable);
+
+interface Props extends Omit<PressableProps, "style"> {
   style?: StyleProp<ViewStyle>;
-  children?: ReactNode;
 }
 
 // Subtle scale-down-on-press feedback, built on core Animated (no native
-// module) so it works without a rebuild.
+// module) so it works without a rebuild. Animates the Pressable itself
+// (rather than wrapping it in a child Animated.View) so styles like
+// flex: 1 in a row still work normally.
 export default function AnimatedPressable({
   style,
-  children,
+  onPressIn,
+  onPressOut,
   ...props
 }: Props) {
   const scale = useRef(new Animated.Value(1)).current;
 
-  function pressIn() {
+  function handlePressIn(e: any) {
     Animated.spring(scale, {
       toValue: 0.96,
       useNativeDriver: true,
       speed: 40,
       bounciness: 6,
     }).start();
+    onPressIn?.(e);
   }
 
-  function pressOut() {
+  function handlePressOut(e: any) {
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
       speed: 40,
       bounciness: 6,
     }).start();
+    onPressOut?.(e);
   }
 
   return (
-    <Pressable onPressIn={pressIn} onPressOut={pressOut} {...props}>
-      <Animated.View style={[style, { transform: [{ scale }] }]}>
-        {children}
-      </Animated.View>
-    </Pressable>
+    <AnimatedPressableBase
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[style, { transform: [{ scale }] }]}
+      {...props}
+    />
   );
 }
