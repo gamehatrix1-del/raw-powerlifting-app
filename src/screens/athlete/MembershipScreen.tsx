@@ -170,6 +170,11 @@ export default function MembershipScreen() {
       )}
 
       <Text style={styles.sectionTitle}>Plans</Text>
+      {plans.length === 0 && (
+        <Text style={styles.emptyText}>
+          Your coach hasn't published any plans yet. Check back soon.
+        </Text>
+      )}
       {plans.map((plan) => (
         <View key={plan.id} style={styles.planCard}>
           <View style={{ flex: 1 }}>

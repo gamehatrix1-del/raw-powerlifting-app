@@ -2,11 +2,13 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAuth } from "../../context/AuthContext";
 import { styles } from "./authStyles";
 
@@ -29,6 +31,11 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require("../../../assets/logo.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>RAW@ Powerlifting</Text>
       <Text style={styles.subtitle}>Log in to continue</Text>
 
@@ -48,7 +55,7 @@ export default function LoginScreen({ navigation }: any) {
         onChangeText={setPassword}
       />
 
-      <Pressable
+      <AnimatedPressable
         style={styles.button}
         onPress={handleSubmit}
         disabled={submitting || !email || !password}
@@ -58,7 +65,7 @@ export default function LoginScreen({ navigation }: any) {
         ) : (
           <Text style={styles.buttonText}>Log In</Text>
         )}
-      </Pressable>
+      </AnimatedPressable>
 
       <Pressable onPress={() => navigation.navigate("Signup")}>
         <Text style={styles.link}>New here? Create an account</Text>

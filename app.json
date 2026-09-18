@@ -5,7 +5,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0B",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.rawpowerlifting.app"
@@ -13,7 +14,7 @@
     "android": {
       "package": "com.rawpowerlifting.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0A0B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -28,6 +29,17 @@
         "projectId": "26f489db-870a-4e5f-b307-b29aec87eb3a"
       }
     },
-    "owner": "gamehatrix1s-team"
+    "owner": "gamehatrix1s-team",
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0A0B"
+        }
+      ]
+    ]
   }
 }

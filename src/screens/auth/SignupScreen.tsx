@@ -2,11 +2,13 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAuth } from "../../context/AuthContext";
 import { styles } from "./authStyles";
 
@@ -24,21 +26,23 @@ export default function SignupScreen({ navigation }: any) {
   async function handleSubmit() {
     setSubmitting(true);
     try {
+      // No email confirmation step — signing up logs the athlete straight
+      // in, and RootNavigator swaps away from this screen once the new
+      // session lands.
       await signUp(email.trim(), password, fullName.trim(), "athlete");
-      Alert.alert(
-        "Check your email",
-        "Confirm your address to finish creating your account, then log in."
-      );
-      navigation.navigate("Login");
     } catch (err: any) {
       Alert.alert("Couldn't sign up", err.message ?? "Please try again.");
-    } finally {
       setSubmitting(false);
     }
   }
 
   return (
     <View style={styles.container}>
+      <Image
+        source={require("../../../assets/logo.png")}
+        style={styles.logo}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>Create your account</Text>
       <Text style={styles.subtitle}>Join RAW@ Powerlifting Academy</Text>
 
@@ -64,7 +68,7 @@ export default function SignupScreen({ navigation }: any) {
         onChangeText={setPassword}
       />
 
-      <Pressable
+      <AnimatedPressable
         style={styles.button}
         onPress={handleSubmit}
         disabled={submitting || !fullName || !email || !password}
@@ -74,7 +78,7 @@ export default function SignupScreen({ navigation }: any) {
         ) : (
           <Text style={styles.buttonText}>Create Account</Text>
         )}
-      </Pressable>
+      </AnimatedPressable>
 
       <Pressable onPress={() => navigation.navigate("Login")}>
         <Text style={styles.link}>Already have an account? Log in</Text>
