@@ -5,8 +5,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#0A0A0B",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#111113",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.rawpowerlifting.app"
@@ -14,7 +14,7 @@
     "android": {
       "package": "com.rawpowerlifting.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0B",
+        "backgroundColor": "#111113",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -37,7 +37,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#0A0A0B"
+          "backgroundColor": "#111113"
         }
       ]
     ]

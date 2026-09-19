@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import { useAppAlert } from "../../components/AppAlert";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import {
   ChipGroup,
+  DateField,
+  DateOfBirthField,
+  HeightField,
   MultiChipGroup,
   NumberField,
   ScaleField,
@@ -56,7 +60,7 @@ const EQUIPMENT_OPTIONS = [
 ];
 
 interface FormState {
-  age: string;
+  dateOfBirth: string;
   gender: string | null;
   city: string;
   heightCm: string;
@@ -117,7 +121,7 @@ interface FormState {
 }
 
 const INITIAL_FORM: FormState = {
-  age: "",
+  dateOfBirth: "",
   gender: null,
   city: "",
   heightCm: "",
@@ -183,7 +187,23 @@ function toNumber(value: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function ageFromDob(iso: string): number | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const dob = new Date(y, m - 1, d);
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const hadBirthday =
+    now.getMonth() > dob.getMonth() ||
+    (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+  if (!hadBirthday) age -= 1;
+  return age;
+}
+
 export default function IntakeScreen() {
+  const { colors, typography, spacing, radius } = useTheme();
+  const alert = useAppAlert();
   const { session, refreshAthleteProfile } = useAuth();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -219,7 +239,8 @@ export default function IntakeScreen() {
     try {
       const { error } = await supabase.from("athlete_profiles").insert({
         user_id: session.user.id,
-        age: toNumber(form.age),
+        date_of_birth: form.dateOfBirth || null,
+        age: ageFromDob(form.dateOfBirth),
         gender: form.gender,
         city: form.city || null,
         height_cm: toNumber(form.heightCm),
@@ -285,37 +306,38 @@ export default function IntakeScreen() {
       if (error) throw error;
       await refreshAthleteProfile();
     } catch (err: any) {
-      Alert.alert(
-        "Couldn't save your intake",
-        err.message ?? "Please try again."
-      );
+      alert("Couldn't save your intake", err.message ?? "Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.progressTrack}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xxl }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
+    >
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.card, overflow: "hidden" }}>
         <Animated.View
-          style={[
-            styles.progressFill,
-            {
-              width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["0%", "100%"],
-              }),
-            },
-          ]}
+          style={{
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: colors.accent,
+            width: progressAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["0%", "100%"],
+            }),
+          }}
         />
       </View>
-      <Text style={styles.stepLabel}>
+      <Text style={[typography.caption, { color: colors.muted, marginTop: spacing.md, marginBottom: spacing.sm }]}>
         Step {step + 1} of {STEP_TITLES.length}
       </Text>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingVertical: spacing.lg, paddingBottom: spacing.xxl * 4 }}
         keyboardShouldPersistTaps="handled"
       >
         {step === 0 && (
@@ -324,7 +346,46 @@ export default function IntakeScreen() {
               title="Athlete Profile"
               subtitle="The basics that shape everything else."
             />
-            <NumberField label="Age" value={form.age} onChangeText={(v) => set("age", v)} />
+            <View
+              style={{
+                backgroundColor: colors.accentMuted,
+                borderRadius: radius.md,
+                padding: spacing.md + 2,
+                marginBottom: spacing.lg,
+              }}
+            >
+              <Text style={[typography.caption, { color: colors.text, lineHeight: 18 }]}>
+                This form collects health-related details (medical history, injuries) so your coach can program
+                safely around them. It's only visible to you and your coach — never shared or sold. See our{" "}
+                Privacy Policy in Profile → Privacy & Data for details.
+              </Text>
+            </View>
+            {(() => {
+              const age = ageFromDob(form.dateOfBirth);
+              if (age !== null && age < 18) {
+                return (
+                  <View
+                    style={{
+                      backgroundColor: colors.warningMuted,
+                      borderRadius: radius.md,
+                      padding: spacing.md + 2,
+                      marginBottom: spacing.lg,
+                    }}
+                  >
+                    <Text style={[typography.caption, { color: colors.warning, fontWeight: "700", marginBottom: 4 }]}>
+                      Under 18
+                    </Text>
+                    <Text style={[typography.caption, { color: colors.text, lineHeight: 18 }]}>
+                      Athletes under 18 need a parent or guardian's consent before we can process this data. Please
+                      have a parent/guardian email {""}
+                      gamehatrix1@gmail.com before continuing.
+                    </Text>
+                  </View>
+                );
+              }
+              return null;
+            })()}
+            <DateOfBirthField value={form.dateOfBirth} onChange={(v) => set("dateOfBirth", v)} />
             <ChipGroup
               label="Gender"
               options={["Male", "Female", "Other"]}
@@ -332,7 +393,7 @@ export default function IntakeScreen() {
               onChange={(v) => set("gender", v)}
             />
             <TextField label="City" value={form.city} onChangeText={(v) => set("city", v)} />
-            <NumberField label="Height" suffix="cm" value={form.heightCm} onChangeText={(v) => set("heightCm", v)} />
+            <HeightField valueCm={form.heightCm} onChangeCm={(v) => set("heightCm", v)} />
             <NumberField label="Bodyweight" suffix="kg" value={form.bodyweightKg} onChangeText={(v) => set("bodyweightKg", v)} />
             <NumberField label="Body Fat" suffix="%" value={form.bodyFatPct} onChangeText={(v) => set("bodyFatPct", v)} />
             <TextField label="Weight Class" value={form.weightClass} onChangeText={(v) => set("weightClass", v)} placeholder="e.g. 83kg" />
@@ -340,7 +401,7 @@ export default function IntakeScreen() {
             <TextField label="Training Experience" value={form.trainingExperience} onChangeText={(v) => set("trainingExperience", v)} placeholder="e.g. 3 years" />
             <TextField label="Powerlifting Experience" value={form.powerliftingExperience} onChangeText={(v) => set("powerliftingExperience", v)} placeholder="e.g. 1 year" />
             <TextField label="Federation" value={form.federation} onChangeText={(v) => set("federation", v)} placeholder="e.g. IPF, USPA" />
-            <TextField label="Next Meet Date" value={form.meetDate} onChangeText={(v) => set("meetDate", v)} placeholder="YYYY-MM-DD" />
+            <DateField label="Next Meet Date" value={form.meetDate} onChange={(v) => set("meetDate", v)} />
             <NumberField label="Meets Done" value={form.meetsDone} onChangeText={(v) => set("meetsDone", v)} />
             <TextField label="Current Goal" value={form.currentGoal} onChangeText={(v) => set("currentGoal", v)} multiline placeholder="What are you training toward right now?" />
             <ChipGroup
@@ -358,17 +419,23 @@ export default function IntakeScreen() {
               title="Best Lift Numbers"
               subtitle="Best known numbers in kg. Leave blank if unsure."
             />
-            <Text style={styles.liftGroupLabel}>Squat</Text>
+            <Text style={[typography.caption, { color: colors.accent, fontWeight: "700", textTransform: "uppercase", marginBottom: spacing.sm + 2 }]}>
+              Squat
+            </Text>
             <NumberField label="Best 1RM" value={form.squatBest1rm} onChangeText={(v) => set("squatBest1rm", v)} />
             <NumberField label="Best 3RM" value={form.squatBest3rm} onChangeText={(v) => set("squatBest3rm", v)} />
             <NumberField label="Competition PR" value={form.squatCompPr} onChangeText={(v) => set("squatCompPr", v)} />
 
-            <Text style={styles.liftGroupLabel}>Bench</Text>
+            <Text style={[typography.caption, { color: colors.accent, fontWeight: "700", textTransform: "uppercase", marginBottom: spacing.sm + 2, marginTop: spacing.xs }]}>
+              Bench
+            </Text>
             <NumberField label="Best 1RM" value={form.benchBest1rm} onChangeText={(v) => set("benchBest1rm", v)} />
             <NumberField label="Best 3RM" value={form.benchBest3rm} onChangeText={(v) => set("benchBest3rm", v)} />
             <NumberField label="Competition PR" value={form.benchCompPr} onChangeText={(v) => set("benchCompPr", v)} />
 
-            <Text style={styles.liftGroupLabel}>Deadlift</Text>
+            <Text style={[typography.caption, { color: colors.accent, fontWeight: "700", textTransform: "uppercase", marginBottom: spacing.sm + 2, marginTop: spacing.xs }]}>
+              Deadlift
+            </Text>
             <NumberField label="Best 1RM" value={form.deadliftBest1rm} onChangeText={(v) => set("deadliftBest1rm", v)} />
             <NumberField label="Best 3RM" value={form.deadliftBest3rm} onChangeText={(v) => set("deadliftBest3rm", v)} />
             <NumberField label="Competition PR" value={form.deadliftCompPr} onChangeText={(v) => set("deadliftCompPr", v)} />
@@ -411,6 +478,11 @@ export default function IntakeScreen() {
         {step === 5 && (
           <View>
             <SectionHeading title="Medical History" />
+            <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.md, padding: spacing.md + 2, marginBottom: spacing.lg }}>
+              <Text style={[typography.caption, { color: colors.text, lineHeight: 18 }]}>
+                Optional, but recommended — sharing this helps your coach keep you safe. This is only visible to you and your coach.
+              </Text>
+            </View>
             <TextField label="Medical Conditions / Medications" value={form.medicalConditions} onChangeText={(v) => set("medicalConditions", v)} multiline />
             <TextField label="Past Surgeries" value={form.pastSurgeries} onChangeText={(v) => set("pastSurgeries", v)} multiline />
           </View>
@@ -449,99 +521,36 @@ export default function IntakeScreen() {
         )}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={{ flexDirection: "row", gap: spacing.md, paddingVertical: spacing.xl }}>
         {step > 0 && (
-          <AnimatedPressable style={styles.secondaryButton} onPress={goBack}>
-            <Text style={styles.secondaryButtonText}>Back</Text>
+          <AnimatedPressable
+            style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: 14, alignItems: "center" }}
+            onPress={goBack}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.muted, fontSize: 16 }]}>Back</Text>
           </AnimatedPressable>
         )}
         {isLastStep ? (
           <AnimatedPressable
-            style={styles.primaryButton}
+            style={{ flex: 1, backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 14, alignItems: "center" }}
             onPress={handleFinish}
             disabled={submitting}
           >
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.accentText} />
             ) : (
-              <Text style={styles.primaryButtonText}>Finish</Text>
+              <Text style={[typography.bodyStrong, { color: colors.accentText, fontSize: 16 }]}>Finish</Text>
             )}
           </AnimatedPressable>
         ) : (
-          <AnimatedPressable style={styles.primaryButton} onPress={goNext}>
-            <Text style={styles.primaryButtonText}>Next</Text>
+          <AnimatedPressable
+            style={{ flex: 1, backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 14, alignItems: "center" }}
+            onPress={goNext}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.accentText, fontSize: 16 }]}>Next</Text>
           </AnimatedPressable>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.card,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.accent,
-  },
-  stepLabel: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingVertical: 16,
-  },
-  liftGroupLabel: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 10,
-    marginTop: 4,
-  },
-  footer: {
-    flexDirection: "row",
-    gap: 12,
-    paddingVertical: 20,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: colors.muted,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

@@ -136,12 +136,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     fullName: string,
     role: UserRole
   ) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { full_name: fullName, role } },
     });
     if (error) throw error;
+
+    // Records explicit consent to the Privacy Policy / Terms at signup
+    // (DPDP Act notice-and-consent requirement) rather than just implying
+    // it from account creation.
+    if (data.user) {
+      await supabase
+        .from("profiles")
+        .update({ consent_accepted_at: new Date().toISOString() })
+        .eq("id", data.user.id);
+    }
   }
 
   async function signOut() {

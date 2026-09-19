@@ -1,27 +1,40 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
+import ProgressRing from "../../components/ProgressRing";
+import StatTile from "../../components/StatTile";
+import WeekStrip from "../../components/WeekStrip";
 import { useAuth } from "../../context/AuthContext";
 import { computeStreak, dateKey, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Program, ProgramDay } from "../../types/program";
 
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 5) return "Still up";
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  if (h < 21) return "Good evening";
+  return "Good night";
+}
+
 export default function HomeScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius, isDark } = useTheme();
   const { profile, session } = useAuth();
   const [program, setProgram] = useState<Program | null>(null);
   const [todayDay, setTodayDay] = useState<ProgramDay | null>(null);
   const [plannedThisWeek, setPlannedThisWeek] = useState(0);
   const [doneThisWeek, setDoneThisWeek] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [weekCompleted, setWeekCompleted] = useState<boolean[]>(Array(7).fill(false));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const todayIndex = (new Date().getDay() + 6) % 7; // Monday = 0
 
   const load = useCallback(async () => {
     if (!session) return;
@@ -54,8 +67,6 @@ export default function HomeScreen({ navigation }: any) {
 
       const allDays = (days as ProgramDay[]) ?? [];
       setPlannedThisWeek(allDays.filter((d) => !d.is_rest_day).length);
-
-      const todayIndex = (new Date().getDay() + 6) % 7; // Monday = 0
       setTodayDay(allDays[todayIndex] ?? null);
     } else {
       setPlannedThisWeek(0);
@@ -77,8 +88,16 @@ export default function HomeScreen({ navigation }: any) {
     const doneThisWeekCount = [...dateKeys].filter((k) => k >= monday).length;
     setDoneThisWeek(doneThisWeekCount);
 
+    const mondayDate = new Date(monday + "T00:00:00");
+    const week = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mondayDate);
+      d.setDate(d.getDate() + i);
+      return dateKeys.has(dateKey(d.toISOString()));
+    });
+    setWeekCompleted(week);
+
     setLoading(false);
-  }, [session]);
+  }, [session, todayIndex]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", load);
@@ -87,7 +106,7 @@ export default function HomeScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -95,107 +114,120 @@ export default function HomeScreen({ navigation }: any) {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ErrorState message="Couldn't load your dashboard." onRetry={load} />
       </View>
     );
   }
 
+  const weekProgress = plannedThisWeek > 0 ? doneThisWeek / plannedThisWeek : 0;
+  const initial = profile?.full_name?.trim()?.[0]?.toUpperCase() ?? "?";
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.greeting}>Hey {profile?.full_name?.split(" ")[0]}</Text>
-
-      {todayDay ? (
-        <Pressable
-          style={styles.todayCard}
-          onPress={() => navigation.navigate("Program")}
-        >
-          <Text style={styles.todayLabel}>
-            Day {todayDay.day_number} — {todayDay.day_label}
-          </Text>
-          <Text style={styles.todaySub}>
-            {todayDay.is_rest_day ? "Rest day" : "Tap to view & log today's session"}
-          </Text>
-        </Pressable>
-      ) : (
-        <View style={styles.todayCard}>
-          <Text style={styles.todayLabel}>No session scheduled</Text>
-          <Text style={styles.todaySub}>
-            {program ? "Check your weekly program" : "Waiting on your coach"}
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingTop: 60, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl }}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.xl }}>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.caption, { color: colors.muted }]}>{greeting()}</Text>
+          <Text style={[typography.display, { color: colors.text, fontSize: 26, marginTop: 2 }]}>
+            {profile?.full_name?.split(" ")[0] ?? "Athlete"}
           </Text>
         </View>
-      )}
-
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{streak}</Text>
-          <Text style={styles.statLabel}>Day streak</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>
-            {doneThisWeek}/{plannedThisWeek || "—"}
-          </Text>
-          <Text style={styles.statLabel}>This week</Text>
-        </View>
+        <AnimatedPressable onPress={() => navigation.navigate("Profile")}>
+          <View
+            style={{
+              width: 44, height: 44, borderRadius: 22,
+              backgroundColor: colors.accentMuted,
+              alignItems: "center", justifyContent: "center",
+              borderWidth: 1.5, borderColor: colors.accent,
+            }}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.accent }]}>{initial}</Text>
+          </View>
+        </AnimatedPressable>
       </View>
-    </View>
+
+      <AnimatedPressable
+        style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.lg }}
+        onPress={() => navigation.navigate("Program")}
+      >
+        <View style={{ padding: spacing.xl }}>
+          <Svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+            <Defs>
+              <LinearGradient id="homeHero" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={colors.accent} stopOpacity={isDark ? 0.32 : 0.14} />
+                <Stop offset="1" stopColor={colors.card} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#homeHero)" />
+          </Svg>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.micro, { color: colors.accent, letterSpacing: 1 }]}>
+                {todayDay ? `DAY ${todayDay.day_number}` : "TODAY"}
+              </Text>
+              <Text style={[typography.heading, { color: colors.text, fontSize: 19, marginTop: 6 }]} numberOfLines={2}>
+                {todayDay
+                  ? todayDay.is_rest_day
+                    ? "Rest day"
+                    : todayDay.day_label
+                  : program
+                  ? "Check your program"
+                  : "Waiting on your coach"}
+              </Text>
+              <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>
+                {todayDay
+                  ? todayDay.is_rest_day
+                    ? "Recover up — you've earned it"
+                    : "Tap to view & log today's session"
+                  : program
+                  ? "No session scheduled today"
+                  : "Your coach hasn't assigned a week yet"}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: spacing.md,
+                  backgroundColor: colors.accent,
+                  alignSelf: "flex-start",
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: 8,
+                  borderRadius: radius.pill,
+                  gap: 6,
+                }}
+              >
+                <Ionicons name={todayDay?.is_rest_day ? "bed" : "barbell"} size={14} color={colors.accentText} />
+                <Text style={[typography.caption, { color: colors.accentText, fontWeight: "700" }]}>
+                  {todayDay ? (todayDay.is_rest_day ? "Rest" : "Start session") : "View program"}
+                </Text>
+              </View>
+            </View>
+
+            <ProgressRing size={70} strokeWidth={6} progress={weekProgress}>
+              <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 15 }]}>
+                {doneThisWeek}/{plannedThisWeek || "–"}
+              </Text>
+            </ProgressRing>
+          </View>
+        </View>
+      </AnimatedPressable>
+
+      <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg }}>
+        <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.md, fontWeight: "600" }]}>
+          This week
+        </Text>
+        <WeekStrip completed={weekCompleted} todayIndex={todayIndex} />
+      </View>
+
+      <View style={{ flexDirection: "row", gap: spacing.md }}>
+        <StatTile icon="flame" value={String(streak)} label={streak === 1 ? "Day streak" : "Day streak"} tone="accent" />
+        <StatTile icon="checkmark-done" value={`${doneThisWeek}/${plannedThisWeek || "–"}`} label="Sessions this week" tone="success" />
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  greeting: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
-  todayCard: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 20,
-  },
-  todayLabel: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  todaySub: {
-    color: colors.muted,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
-  statValue: {
-    color: colors.accent,
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  statLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-});

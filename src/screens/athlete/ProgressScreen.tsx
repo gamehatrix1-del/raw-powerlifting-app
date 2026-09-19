@@ -1,23 +1,24 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from "react-native";
 import ErrorState from "../../components/ErrorState";
 import LineChart from "../../components/LineChart";
+import StatTile from "../../components/StatTile";
 import { useAuth } from "../../context/AuthContext";
 import { dateKey } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 
 const LIFTS = [
-  { key: "squat", label: "Squat", match: "squat" },
-  { key: "bench", label: "Bench", match: "bench" },
-  { key: "deadlift", label: "Deadlift", match: "deadlift" },
+  { key: "squat", label: "Squat", match: "squat", icon: "body" as const },
+  { key: "bench", label: "Bench", match: "bench", icon: "barbell" as const },
+  { key: "deadlift", label: "Deadlift", match: "deadlift", icon: "fitness" as const },
 ];
 
 interface SeriesPoint {
@@ -30,6 +31,7 @@ function epleyOneRm(weight: number, reps: number) {
 }
 
 export default function ProgressScreen() {
+  const { colors, typography, spacing, radius } = useTheme();
   const { session } = useAuth();
   const { width } = useWindowDimensions();
   const [series, setSeries] = useState<Record<string, SeriesPoint[]>>({});
@@ -90,7 +92,7 @@ export default function ProgressScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -98,20 +100,31 @@ export default function ProgressScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ErrorState message="Couldn't load progress." onRetry={load} />
       </View>
     );
   }
 
-  const chartWidth = width - 24 * 2 - 32;
+  const chartWidth = width - spacing.xl * 2 - spacing.lg * 2;
+  const totals = LIFTS.map((lift) => {
+    const points = series[lift.key] ?? [];
+    return points.length ? Math.round(points[points.length - 1].estOneRm) : 0;
+  });
+  const total = totals.reduce((a, b) => a + b, 0);
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingTop: 60, paddingHorizontal: spacing.xl, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Progress</Text>
+      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.lg }]}>Progress</Text>
+
+      <View style={{ flexDirection: "row", gap: spacing.sm + 2, marginBottom: spacing.xl }}>
+        <StatTile icon="calculator" value={total ? `${total}kg` : "—"} label="Est. total" tone="accent" />
+        <StatTile icon="trending-up" value={String(LIFTS.filter((l) => (series[l.key]?.length ?? 0) > 0).length)} label="Lifts tracked" tone="success" />
+      </View>
 
       {LIFTS.map((lift) => {
         const points = series[lift.key] ?? [];
@@ -121,25 +134,41 @@ export default function ProgressScreen() {
           latest.estOneRm === Math.max(...points.map((p) => p.estOneRm));
 
         return (
-          <View key={lift.key} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.liftName}>{lift.label}</Text>
-              {latest && (
-                <View style={styles.valueRow}>
-                  <Text style={styles.liftValue}>
-                    {Math.round(latest.estOneRm)} kg est. 1RM
-                  </Text>
-                  {isPr && points.length > 1 && (
-                    <View style={styles.prBadge}>
-                      <Text style={styles.prBadgeText}>PR</Text>
-                    </View>
-                  )}
+          <View
+            key={lift.key}
+            style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md + 2 }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2 }}>
+              <View
+                style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: colors.accentMuted,
+                  alignItems: "center", justifyContent: "center",
+                  marginRight: spacing.sm + 2,
+                }}
+              >
+                <Ionicons name={lift.icon} size={15} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.subheading, { color: colors.text }]}>{lift.label}</Text>
+                {latest && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: 2 }}>
+                    <Text style={[typography.caption, { color: colors.muted, fontVariant: ["tabular-nums"] }]}>
+                      {Math.round(latest.estOneRm)} kg est. 1RM
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {isPr && points.length > 1 && (
+                <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: colors.accent, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 5, gap: 4 }}>
+                  <Ionicons name="trophy" size={11} color={colors.accentText} />
+                  <Text style={[typography.micro, { color: colors.accentText }]}>PR</Text>
                 </View>
               )}
             </View>
 
             {points.length === 0 ? (
-              <Text style={styles.emptyText}>No logged sets yet.</Text>
+              <Text style={[typography.caption, { color: colors.faint }]}>No logged sets yet.</Text>
             ) : (
               <LineChart
                 points={points.map((p) => ({ value: p.estOneRm }))}
@@ -152,66 +181,3 @@ export default function ProgressScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollContent: {
-    paddingTop: 64,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 20,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
-  },
-  cardHeader: {
-    marginBottom: 10,
-  },
-  liftName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  valueRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 2,
-  },
-  liftValue: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  prBadge: {
-    backgroundColor: colors.accent,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  prBadgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  emptyText: {
-    color: colors.faint,
-    fontSize: 13,
-  },
-});

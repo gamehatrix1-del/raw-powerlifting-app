@@ -1,37 +1,35 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
+import { formatDisplayDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { AthleteProfile } from "../../types/profile";
 import { Program } from "../../types/program";
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
+  const { colors, typography, spacing } = useTheme();
   if (value === null || value === undefined || value === "") return null;
   return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.sm, gap: spacing.md }}>
+      <Text style={[typography.caption, { color: colors.muted }]}>{label}</Text>
+      <Text style={[typography.caption, { color: colors.text, flexShrink: 1, textAlign: "right" }]}>{value}</Text>
     </View>
   );
 }
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors, typography, spacing, radius } = useTheme();
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.md }}>
+      <Text style={[typography.micro, { color: colors.accent, marginBottom: spacing.sm + 2 }]}>{title}</Text>
       {children}
     </View>
   );
 }
 
 export default function AthleteDetailScreen({ route, navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
   const { athleteId, athleteName } = route.params as {
     athleteId: string;
     athleteName: string;
@@ -69,28 +67,43 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.title}>{athleteName}</Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingTop: 24, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.xl }}>
+        <View
+          style={{
+            width: 52, height: 52, borderRadius: 26,
+            backgroundColor: colors.accentMuted,
+            alignItems: "center", justifyContent: "center",
+            marginRight: spacing.md,
+          }}
+        >
+          <Text style={[typography.heading, { color: colors.accent }]}>
+            {athleteName?.trim()?.[0]?.toUpperCase() ?? "?"}
+          </Text>
+        </View>
+        <Text style={[typography.title, { color: colors.text, flex: 1 }]} numberOfLines={1}>{athleteName}</Text>
+      </View>
 
-      <Pressable
-        style={styles.buildButton}
-        onPress={() =>
-          navigation.navigate("ProgramBuilder", { athleteId, athleteName })
-        }
+      <AnimatedPressable
+        style={{ backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: 14, alignItems: "center", marginBottom: spacing.xl, flexDirection: "row", justifyContent: "center", gap: spacing.sm }}
+        onPress={() => navigation.navigate("ProgramBuilder", { athleteId, athleteName })}
       >
-        <Text style={styles.buildButtonText}>Build Program</Text>
-      </Pressable>
+        <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Build Program</Text>
+      </AnimatedPressable>
 
       {!p ? (
-        <View style={styles.card}>
-          <Text style={styles.rowValue}>Hasn't completed intake yet.</Text>
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg }}>
+          <Text style={[typography.caption, { color: colors.text }]}>Hasn't completed intake yet.</Text>
         </View>
       ) : (
         <>
@@ -106,7 +119,7 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
             <Row label="Training Exp." value={p.training_experience} />
             <Row label="PL Exp." value={p.powerlifting_experience} />
             <Row label="Federation" value={p.federation} />
-            <Row label="Next Meet" value={p.meet_date} />
+            <Row label="Next Meet" value={p.meet_date ? formatDisplayDate(p.meet_date) : null} />
             <Row label="Meets Done" value={p.meets_done} />
             <Row label="Current Goal" value={p.current_goal} />
             <Row label="Training Days/Week" value={p.training_days_per_week} />
@@ -168,15 +181,17 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
         </>
       )}
 
-      <Text style={styles.sectionTitle}>Program history</Text>
+      <Text style={[typography.subheading, { color: colors.text, marginTop: spacing.sm, marginBottom: spacing.sm + 2 }]}>
+        Program history
+      </Text>
       {programs.length === 0 ? (
-        <Text style={styles.emptyText}>No programs assigned yet.</Text>
+        <Text style={[typography.body, { color: colors.muted }]}>No programs assigned yet.</Text>
       ) : (
         programs.map((item) => (
-          <View key={item.id} style={styles.programRow}>
-            <Text style={styles.programName}>{item.name}</Text>
-            <Text style={styles.programMeta}>
-              Week of {item.week_start_date} · {item.status}
+          <View key={item.id} style={{ backgroundColor: colors.card, borderRadius: radius.sm, padding: spacing.md + 2, marginBottom: spacing.sm }}>
+            <Text style={[typography.bodyStrong, { color: colors.text }]}>{item.name}</Text>
+            <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
+              Week of {formatDisplayDate(item.week_start_date)} · {item.status}
             </Text>
           </View>
         ))
@@ -197,93 +212,3 @@ function joinNonEmpty(values: (string | null)[]) {
   const filtered = values.filter(Boolean);
   return filtered.length ? filtered.join(" · ") : null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingTop: 24,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  cardTitle: {
-    color: colors.accent,
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    gap: 12,
-  },
-  rowLabel: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  rowValue: {
-    color: colors.text,
-    fontSize: 13,
-    flexShrink: 1,
-    textAlign: "right",
-  },
-  buildButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  buildButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 8,
-    marginBottom: 10,
-  },
-  emptyText: {
-    color: colors.muted,
-  },
-  programRow: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-  },
-  programName: {
-    color: colors.text,
-    fontWeight: "600",
-  },
-  programMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-});

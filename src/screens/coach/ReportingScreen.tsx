@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ErrorState from "../../components/ErrorState";
+import StatTile from "../../components/StatTile";
 import { addInterval } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 
 interface TopLift {
   name: string;
@@ -17,6 +12,7 @@ interface TopLift {
 }
 
 export default function ReportingScreen() {
+  const { colors, typography, spacing, radius } = useTheme();
   const [totalAthletes, setTotalAthletes] = useState(0);
   const [activeMembers, setActiveMembers] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
@@ -94,7 +90,7 @@ export default function ReportingScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -102,126 +98,74 @@ export default function ReportingScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ErrorState message="Couldn't load reporting data." onRetry={load} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.title}>Reporting</Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingTop: 64, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
+    >
+      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.xl }]}>Reporting</Text>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{activeMembers}</Text>
-          <Text style={styles.statLabel}>Active members</Text>
+      <View style={{ flexDirection: "row", gap: spacing.md, marginBottom: spacing.md }}>
+        <StatTile icon="people" value={String(activeMembers)} label="Active members" tone="success" />
+        <StatTile icon="person-add" value={String(totalAthletes)} label="Total athletes" tone="accent" />
+      </View>
+
+      <View style={{ borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.xxl + 4, backgroundColor: colors.card, flexDirection: "row", alignItems: "center" }}>
+        <View
+          style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: colors.accentMuted,
+            alignItems: "center", justifyContent: "center",
+            marginRight: spacing.md,
+          }}
+        >
+          <Text style={{ fontSize: 18 }}>₹</Text>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{totalAthletes}</Text>
-          <Text style={styles.statLabel}>Total athletes</Text>
+        <View>
+          <Text style={[typography.caption, { color: colors.muted }]}>This month's revenue</Text>
+          <Text style={[typography.display, { color: colors.text, fontSize: 24, marginTop: 2, fontVariant: ["tabular-nums"] }]}>
+            ₹{monthRevenue.toLocaleString("en-IN")}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.revenueCard}>
-        <Text style={styles.statLabel}>This month's revenue</Text>
-        <Text style={styles.revenueValue}>₹{monthRevenue}</Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Most-assigned lifts</Text>
+      <Text style={[typography.subheading, { color: colors.text, marginBottom: spacing.sm + 2 }]}>Most-assigned lifts</Text>
       {topLifts.length === 0 ? (
-        <Text style={styles.emptyText}>No programs built yet.</Text>
+        <Text style={[typography.caption, { color: colors.muted }]}>No programs built yet.</Text>
       ) : (
-        topLifts.map((lift) => (
-          <View key={lift.name} style={styles.liftRow}>
-            <Text style={styles.liftName}>{lift.name}</Text>
-            <Text style={styles.liftCount}>{lift.count}</Text>
+        topLifts.map((lift, i) => (
+          <View
+            key={lift.name}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: colors.card,
+              borderRadius: radius.md,
+              padding: spacing.md + 2,
+              marginBottom: spacing.sm,
+            }}
+          >
+            <View
+              style={{
+                width: 24, height: 24, borderRadius: 12,
+                backgroundColor: colors.accentMuted,
+                alignItems: "center", justifyContent: "center",
+                marginRight: spacing.sm + 2,
+              }}
+            >
+              <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0 }]}>{i + 1}</Text>
+            </View>
+            <Text style={[typography.body, { color: colors.text, flex: 1 }]}>{lift.name}</Text>
+            <Text style={[typography.bodyStrong, { color: colors.muted }]}>{lift.count}×</Text>
           </View>
         ))
       )}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollContent: {
-    paddingTop: 64,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 20,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
-  statValue: {
-    color: colors.accent,
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  statLabel: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  revenueCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 28,
-  },
-  revenueValue: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  emptyText: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  liftRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-  },
-  liftName: {
-    color: colors.text,
-  },
-  liftCount: {
-    color: colors.muted,
-    fontWeight: "600",
-  },
-});

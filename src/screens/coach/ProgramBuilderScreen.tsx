@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
-  Pressable,
+  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
+import { useAppAlert } from "../../components/AppAlert";
+import DateField from "../../components/DateField";
+import SegmentedControl from "../../components/SegmentedControl";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Exercise } from "../../types/exercise";
 
 interface DraftExercise {
@@ -45,6 +48,8 @@ function emptyDays(): DraftDay[] {
 }
 
 export default function ProgramBuilderScreen({ route, navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const alert = useAppAlert();
   const { athleteId, athleteName } = route.params as {
     athleteId: string;
     athleteName: string;
@@ -72,6 +77,16 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
   }, []);
 
   const currentDay = days[activeDay];
+
+  const inputStyle = {
+    backgroundColor: colors.card,
+    color: colors.text,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: 15,
+    marginBottom: spacing.sm + 2,
+  };
 
   function updateDay(index: number, patch: Partial<DraftDay>) {
     setDays((prev) =>
@@ -104,7 +119,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
 
       if (programError) throw programError;
       if (!lastProgram) {
-        Alert.alert("No previous program", "This athlete has no prior week to copy.");
+        alert("No previous program", "This athlete has no prior week to copy.");
         return;
       }
 
@@ -142,7 +157,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
 
       setDays(nextDays.length === 7 ? nextDays : emptyDays());
     } catch (err: any) {
-      Alert.alert("Couldn't copy last week", err.message ?? "Please try again.");
+      alert("Couldn't copy last week", err.message ?? "Please try again.");
     } finally {
       setCopying(false);
     }
@@ -202,127 +217,139 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
         if (exercisesError) throw exercisesError;
       }
 
-      Alert.alert("Program assigned", `${athleteName}'s week is live.`);
+      alert("Program assigned", `${athleteName}'s week is live.`);
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert("Couldn't save program", err.message ?? "Please try again.");
+      alert("Couldn't save program", err.message ?? "Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Build week for {athleteName}</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[typography.heading, { color: colors.text, fontSize: 20, marginBottom: spacing.lg }]}>
+          Build week for {athleteName}
+        </Text>
 
         <TextInput
-          style={styles.input}
+          style={inputStyle}
           value={programName}
           onChangeText={setProgramName}
           placeholder="Program name"
           placeholderTextColor={colors.faint}
         />
-        <TextInput
-          style={styles.input}
-          value={weekStartDate}
-          onChangeText={setWeekStartDate}
-          placeholder="Week start (YYYY-MM-DD)"
-          placeholderTextColor={colors.faint}
-        />
+        <DateField label="Week start" value={weekStartDate} onChange={setWeekStartDate} />
 
-        <Pressable
-          style={styles.copyButton}
+        <AnimatedPressable
+          style={{ backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center", marginBottom: spacing.xl }}
           onPress={handleCopyLastWeek}
           disabled={copying}
         >
           {copying ? (
             <ActivityIndicator color={colors.text} />
           ) : (
-            <Text style={styles.copyButtonText}>Copy last week</Text>
+            <Text style={[typography.bodyStrong, { color: colors.text }]}>Copy last week</Text>
           )}
-        </Pressable>
+        </AnimatedPressable>
 
-        <View style={styles.dayTabs}>
-          {days.map((d, i) => (
-            <Pressable
-              key={d.dayNumber}
-              style={[styles.dayTab, activeDay === i && styles.dayTabActive]}
-              onPress={() => setActiveDay(i)}
-            >
-              <Text
-                style={[
-                  styles.dayTabText,
-                  activeDay === i && styles.dayTabTextActive,
-                ]}
-              >
-                {d.dayNumber}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={{ marginBottom: spacing.lg }}>
+          <SegmentedControl
+            options={days.map((d) => ({ label: String(d.dayNumber), value: String(d.dayNumber) }))}
+            value={String(days[activeDay]?.dayNumber ?? 1)}
+            onChange={(v) => setActiveDay(days.findIndex((d) => String(d.dayNumber) === v))}
+          />
         </View>
 
         <TextInput
-          style={styles.input}
+          style={inputStyle}
           value={currentDay.label}
           onChangeText={(text) => updateDay(activeDay, { label: text })}
           placeholder="Day label"
           placeholderTextColor={colors.faint}
         />
 
-        <Pressable
-          style={styles.restToggle}
-          onPress={() =>
-            updateDay(activeDay, { isRestDay: !currentDay.isRestDay })
-          }
+        <AnimatedPressable
+          style={{ marginBottom: spacing.lg, flexDirection: "row", alignItems: "center", gap: spacing.sm }}
+          onPress={() => updateDay(activeDay, { isRestDay: !currentDay.isRestDay })}
         >
-          <Text style={styles.restToggleText}>
-            {currentDay.isRestDay ? "☑" : "☐"} Rest day
-          </Text>
-        </Pressable>
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 5,
+              borderWidth: 1.5,
+              borderColor: currentDay.isRestDay ? colors.accent : colors.border,
+              backgroundColor: currentDay.isRestDay ? colors.accent : "transparent",
+            }}
+          />
+          <Text style={[typography.body, { color: colors.text }]}>Rest day</Text>
+        </AnimatedPressable>
 
         {!currentDay.isRestDay && (
           <>
             {currentDay.exercises.map((e) => (
-              <View key={e.tempId} style={styles.exerciseCard}>
-                <View style={styles.exerciseCardHeader}>
-                  <Text style={styles.exerciseName}>{e.exerciseName}</Text>
-                  <Pressable onPress={() => removeExercise(e.tempId)}>
-                    <Text style={styles.removeText}>Remove</Text>
-                  </Pressable>
+              <View key={e.tempId} style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md + 2, marginBottom: spacing.sm }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={[typography.bodyStrong, { color: colors.text, flex: 1 }]}>{e.exerciseName}</Text>
+                  <AnimatedPressable onPress={() => removeExercise(e.tempId)}>
+                    <Text style={[typography.caption, { color: colors.accent }]}>Remove</Text>
+                  </AnimatedPressable>
                 </View>
-                <Text style={styles.exerciseMeta}>
+                <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>
                   {e.sets} sets x {e.reps}
                   {e.targetLoad ? ` @ ${e.targetLoad}` : ""}
                   {e.targetRpe ? ` · RPE ${e.targetRpe}` : ""}
                 </Text>
                 {e.tempoNote ? (
-                  <Text style={styles.exerciseTempo}>{e.tempoNote}</Text>
+                  <Text style={[typography.caption, { color: colors.faint, marginTop: 2, fontSize: 12 }]}>{e.tempoNote}</Text>
                 ) : null}
               </View>
             ))}
 
-            <Pressable
-              style={styles.addExerciseButton}
+            <AnimatedPressable
+              style={{
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.card,
+                paddingVertical: spacing.md,
+                alignItems: "center",
+                marginTop: spacing.xs,
+              }}
               onPress={() => setPickerVisible(true)}
             >
-              <Text style={styles.addExerciseButtonText}>+ Add Exercise</Text>
-            </Pressable>
+              <Text style={[typography.bodyStrong, { color: colors.muted }]}>+ Add Exercise</Text>
+            </AnimatedPressable>
           </>
         )}
       </ScrollView>
 
-      <Pressable
-        style={[styles.saveButton, saving && styles.buttonDisabled]}
+      <AnimatedPressable
+        style={{
+          backgroundColor: colors.accent,
+          borderRadius: radius.md,
+          paddingVertical: spacing.lg,
+          alignItems: "center",
+          marginHorizontal: spacing.xxl,
+          marginBottom: spacing.xxl,
+          opacity: saving ? 0.6 : 1,
+        }}
         onPress={handleSave}
         disabled={saving}
       >
         {saving ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.accentText} />
         ) : (
-          <Text style={styles.saveButtonText}>Assign Program</Text>
+          <Text style={[typography.bodyStrong, { color: colors.accentText, fontSize: 16 }]}>Assign Program</Text>
         )}
-      </Pressable>
+      </AnimatedPressable>
 
       <ExercisePickerModal
         visible={pickerVisible}
@@ -333,7 +360,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
           setPickerVisible(false);
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -348,6 +375,7 @@ function ExercisePickerModal({
   onClose: () => void;
   onAdd: (draft: DraftExercise) => void;
 }) {
+  const { colors, typography, spacing, radius } = useTheme();
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [search, setSearch] = useState("");
   const [sets, setSets] = useState("3");
@@ -394,15 +422,29 @@ function ExercisePickerModal({
     reset();
   }
 
+  const inputStyle = {
+    backgroundColor: colors.background,
+    color: colors.text,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: 15,
+    marginBottom: spacing.sm + 2,
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "85%" }}>
           {!selected ? (
             <>
-              <Text style={styles.modalTitle}>Pick an exercise</Text>
+              <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Pick an exercise</Text>
               <TextInput
-                style={styles.input}
+                style={inputStyle}
                 placeholder="Search"
                 placeholderTextColor={colors.faint}
                 value={search}
@@ -413,29 +455,32 @@ function ExercisePickerModal({
                 keyExtractor={(item) => item.id}
                 style={{ maxHeight: 300 }}
                 ListEmptyComponent={
-                  <Text style={styles.emptyText}>
+                  <Text style={[typography.caption, { color: colors.muted, textAlign: "center", marginTop: 20 }]}>
                     No exercises match. Add some in the Library tab first.
                   </Text>
                 }
                 renderItem={({ item }) => (
-                  <Pressable
-                    style={styles.pickRow}
+                  <AnimatedPressable
+                    style={{ paddingVertical: spacing.md + 2, borderBottomWidth: 1, borderBottomColor: colors.background }}
                     onPress={() => setSelected(item)}
                   >
-                    <Text style={styles.pickRowText}>{item.name}</Text>
-                  </Pressable>
+                    <Text style={[typography.body, { color: colors.text }]}>{item.name}</Text>
+                  </AnimatedPressable>
                 )}
               />
-              <Pressable style={styles.secondaryButton} onPress={handleClose}>
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
-              </Pressable>
+              <AnimatedPressable
+                style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.sm + 2 }}
+                onPress={handleClose}
+              >
+                <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
+              </AnimatedPressable>
             </>
           ) : (
-            <>
-              <Text style={styles.modalTitle}>{selected.name}</Text>
-              <View style={styles.row}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>{selected.name}</Text>
+              <View style={{ flexDirection: "row", gap: spacing.sm + 2 }}>
                 <TextInput
-                  style={[styles.input, styles.rowInput]}
+                  style={[inputStyle, { flex: 1 }]}
                   placeholder="Sets"
                   placeholderTextColor={colors.faint}
                   keyboardType="numeric"
@@ -443,23 +488,23 @@ function ExercisePickerModal({
                   onChangeText={setSets}
                 />
                 <TextInput
-                  style={[styles.input, styles.rowInput]}
+                  style={[inputStyle, { flex: 1 }]}
                   placeholder="Reps (e.g. 5 or 8-10)"
                   placeholderTextColor={colors.faint}
                   value={reps}
                   onChangeText={setReps}
                 />
               </View>
-              <View style={styles.row}>
+              <View style={{ flexDirection: "row", gap: spacing.sm + 2 }}>
                 <TextInput
-                  style={[styles.input, styles.rowInput]}
+                  style={[inputStyle, { flex: 1 }]}
                   placeholder="Load (e.g. 80% or 60kg)"
                   placeholderTextColor={colors.faint}
                   value={targetLoad}
                   onChangeText={setTargetLoad}
                 />
                 <TextInput
-                  style={[styles.input, styles.rowInput]}
+                  style={[inputStyle, { flex: 1 }]}
                   placeholder="RPE"
                   placeholderTextColor={colors.faint}
                   keyboardType="numeric"
@@ -468,220 +513,31 @@ function ExercisePickerModal({
                 />
               </View>
               <TextInput
-                style={styles.input}
+                style={inputStyle}
                 placeholder="Tempo / technique note (optional)"
                 placeholderTextColor={colors.faint}
                 value={tempoNote}
                 onChangeText={setTempoNote}
               />
-              <View style={styles.modalFooter}>
-                <Pressable
-                  style={styles.secondaryButton}
+              <View style={{ flexDirection: "row", gap: spacing.md, marginTop: spacing.xs }}>
+                <AnimatedPressable
+                  style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
                   onPress={() => setSelected(null)}
                 >
-                  <Text style={styles.secondaryButtonText}>Back</Text>
-                </Pressable>
-                <Pressable style={styles.primaryButton} onPress={handleAdd}>
-                  <Text style={styles.primaryButtonText}>Add to day</Text>
-                </Pressable>
+                  <Text style={[typography.bodyStrong, { color: colors.muted }]}>Back</Text>
+                </AnimatedPressable>
+                <AnimatedPressable
+                  style={{ flex: 1, backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
+                  onPress={handleAdd}
+                >
+                  <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Add to day</Text>
+                </AnimatedPressable>
               </View>
-            </>
+            </ScrollView>
           )}
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 24,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: colors.card,
-    color: colors.text,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 10,
-  },
-  copyButton: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  copyButtonText: {
-    color: colors.text,
-    fontWeight: "600",
-  },
-  dayTabs: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  dayTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: colors.card,
-  },
-  dayTabActive: {
-    backgroundColor: colors.accent,
-  },
-  dayTabText: {
-    color: colors.muted,
-    fontWeight: "600",
-  },
-  dayTabTextActive: {
-    color: "#fff",
-  },
-  restToggle: {
-    marginBottom: 16,
-  },
-  restToggleText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  exerciseCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-  },
-  exerciseCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  exerciseName: {
-    color: colors.text,
-    fontWeight: "600",
-    flex: 1,
-  },
-  removeText: {
-    color: colors.accent,
-    fontSize: 12,
-  },
-  exerciseMeta: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  exerciseTempo: {
-    color: colors.faint,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  addExerciseButton: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.card,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  addExerciseButtonText: {
-    color: colors.muted,
-    fontWeight: "600",
-  },
-  saveButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginHorizontal: 24,
-    marginBottom: 24,
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    maxHeight: "85%",
-  },
-  modalTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  rowInput: {
-    flex: 1,
-  },
-  pickRow: {
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.background,
-  },
-  pickRowText: {
-    color: colors.text,
-    fontSize: 15,
-  },
-  emptyText: {
-    color: colors.muted,
-    textAlign: "center",
-    marginTop: 20,
-  },
-  modalFooter: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    color: colors.muted,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-});

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
-  Pressable,
+  Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
+import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Plan, PlanInterval } from "../../types/plan";
 
 const INTERVALS: PlanInterval[] = ["monthly", "quarterly", "yearly"];
@@ -28,7 +29,9 @@ interface TransactionRow {
   plan_name: string;
 }
 
-export default function PaymentsScreen() {
+export default function PaymentsScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const alert = useAppAlert();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,7 +98,7 @@ export default function PaymentsScreen() {
       is_active: true,
     });
     if (error) {
-      Alert.alert("Couldn't create plan", error.message);
+      alert("Couldn't create plan", error.message);
       return;
     }
     setModalVisible(false);
@@ -108,7 +111,7 @@ export default function PaymentsScreen() {
       .update({ is_active: !plan.is_active })
       .eq("id", plan.id);
     if (error) {
-      Alert.alert("Couldn't update plan", error.message);
+      alert("Couldn't update plan", error.message);
       return;
     }
     load();
@@ -116,7 +119,7 @@ export default function PaymentsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -124,83 +127,118 @@ export default function PaymentsScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ErrorState message="Couldn't load payments." onRetry={load} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Membership Plans</Text>
-        <Pressable style={styles.addButton} onPress={() => setModalVisible(true)}>
-          <Text style={styles.addButtonText}>+ Add</Text>
-        </Pressable>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ paddingTop: 64, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
+        <Text style={[typography.heading, { color: colors.text, fontSize: 20 }]}>Membership Plans</Text>
+        <AnimatedPressable
+          style={{ backgroundColor: colors.accent, borderRadius: radius.sm, paddingHorizontal: spacing.md + 2, paddingVertical: spacing.sm }}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={[typography.caption, { color: colors.accentText, fontWeight: "700" }]}>+ Add</Text>
+        </AnimatedPressable>
       </View>
 
       {plans.length === 0 ? (
-        <Text style={styles.emptyText}>No plans yet. Add one to get started.</Text>
+        <Text style={[typography.caption, { color: colors.muted }]}>No plans yet. Add one to get started.</Text>
       ) : (
         plans.map((plan) => (
-          <Pressable
+          <AnimatedPressable
             key={plan.id}
-            style={styles.planCard}
+            style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm + 2 }}
             onPress={() => togglePlanActive(plan)}
           >
-            <View style={styles.planCardHeader}>
-              <Text style={styles.planName}>{plan.name}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 16, flex: 1 }]}>{plan.name}</Text>
               <View
-                style={[
-                  styles.statusBadge,
-                  plan.is_active ? styles.statusActive : styles.statusInactive,
-                ]}
+                style={{
+                  borderRadius: 6,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: 4,
+                  backgroundColor: plan.is_active ? colors.successMuted : colors.cardAlt,
+                }}
               >
-                <Text style={styles.statusBadgeText}>
+                <Text style={[typography.micro, { color: plan.is_active ? colors.success : colors.faint, letterSpacing: 0 }]}>
                   {plan.is_active ? "Active" : "Inactive"}
                 </Text>
               </View>
             </View>
-            <Text style={styles.planMeta}>
+            <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>
               ₹{plan.price_inr} / {plan.billing_interval}
             </Text>
             {plan.description ? (
-              <Text style={styles.planDescription}>{plan.description}</Text>
+              <Text style={[typography.caption, { color: colors.faint, marginTop: 4, fontSize: 12 }]}>{plan.description}</Text>
             ) : null}
-          </Pressable>
+          </AnimatedPressable>
         ))
       )}
 
-      <Text style={[styles.title, styles.sectionSpacing]}>Transactions</Text>
+      <Text style={[typography.heading, { color: colors.text, fontSize: 20, marginTop: spacing.xxl + 4, marginBottom: spacing.md + 2 }]}>
+        Transactions
+      </Text>
       <FlatList
         data={transactions}
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>
+          <Text style={[typography.caption, { color: colors.muted }]}>
             No payments yet. Checkout goes live once Razorpay is wired up.
           </Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.txRow}>
+          <AnimatedPressable
+            style={{
+              flexDirection: "row",
+              backgroundColor: colors.card,
+              borderRadius: radius.md,
+              padding: spacing.md + 2,
+              marginBottom: spacing.sm,
+              alignItems: "flex-start",
+              gap: spacing.sm,
+            }}
+            onPress={() => navigation.navigate("TransactionDetail", { paymentId: item.id })}
+          >
             <View style={{ flex: 1 }}>
-              <Text style={styles.txAthlete}>{item.athlete_name}</Text>
-              <Text style={styles.txMeta}>
+              <Text style={[typography.bodyStrong, { color: colors.text }]}>{item.athlete_name}</Text>
+              <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
                 {item.plan_name} · ₹{item.amount_inr}
               </Text>
               {item.status === "failed" && item.failure_reason ? (
-                <Text style={styles.txFailureReason}>{item.failure_reason}</Text>
+                <Text style={[typography.caption, { color: colors.error, fontSize: 11, marginTop: 4, lineHeight: 15 }]}>
+                  {item.failure_reason}
+                </Text>
               ) : null}
             </View>
-            <Text
-              style={[
-                styles.txStatus,
-                item.status === "failed" && styles.txStatusFailed,
-              ]}
+            <View
+              style={{
+                borderRadius: 6,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                backgroundColor: item.status === "failed" ? colors.errorMuted : colors.successMuted,
+              }}
             >
-              {item.status}
-            </Text>
-          </View>
+              <Text
+                style={[
+                  typography.micro,
+                  {
+                    color: item.status === "failed" ? colors.error : colors.success,
+                    letterSpacing: 0,
+                  },
+                ]}
+              >
+                {item.status.toUpperCase()}
+              </Text>
+            </View>
+          </AnimatedPressable>
         )}
       />
 
@@ -227,6 +265,7 @@ function PlanModal({
     interval: PlanInterval;
   }) => Promise<void>;
 }) {
+  const { colors, typography, spacing, radius } = useTheme();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceInr, setPriceInr] = useState("");
@@ -250,21 +289,36 @@ function PlanModal({
     }
   }
 
+  const inputStyle = {
+    backgroundColor: colors.background,
+    color: colors.text,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: 15,
+    marginBottom: spacing.md,
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>New Plan</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "85%" }}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>New Plan</Text>
 
           <TextInput
-            style={styles.input}
+            style={inputStyle}
             placeholder="Name (e.g. Monthly Coaching)"
             placeholderTextColor={colors.faint}
             value={name}
             onChangeText={setName}
           />
           <TextInput
-            style={styles.input}
+            style={inputStyle}
             placeholder="Price in INR"
             placeholderTextColor={colors.faint}
             keyboardType="numeric"
@@ -272,268 +326,77 @@ function PlanModal({
             onChangeText={setPriceInr}
           />
 
-          <View style={styles.intervalRow}>
-            {INTERVALS.map((i) => (
-              <Pressable
-                key={i}
-                style={[
-                  styles.intervalOption,
-                  interval === i && styles.intervalOptionActive,
-                ]}
-                onPress={() => setInterval(i)}
-              >
-                <Text
-                  style={[
-                    styles.intervalOptionText,
-                    interval === i && styles.intervalOptionTextActive,
-                  ]}
+          <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: spacing.md }}>
+            {INTERVALS.map((i) => {
+              const active = interval === i;
+              return (
+                <AnimatedPressable
+                  key={i}
+                  style={{
+                    flex: 1,
+                    paddingVertical: spacing.sm + 2,
+                    borderRadius: radius.sm,
+                    alignItems: "center",
+                    backgroundColor: colors.background,
+                    borderWidth: 1,
+                    borderColor: active ? colors.accent : "transparent",
+                  }}
+                  onPress={() => setInterval(i)}
                 >
-                  {i}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    style={[
+                      typography.caption,
+                      { color: active ? colors.text : colors.muted, fontWeight: "600", textTransform: "capitalize" },
+                    ]}
+                  >
+                    {i}
+                  </Text>
+                </AnimatedPressable>
+              );
+            })}
           </View>
 
           <TextInput
-            style={styles.input}
+            style={inputStyle}
             placeholder="Description (optional)"
             placeholderTextColor={colors.faint}
             value={description}
             onChangeText={setDescription}
           />
 
-          <View style={styles.modalFooter}>
-            <Pressable
-              style={styles.secondaryButton}
+          <View style={{ flexDirection: "row", gap: spacing.md, marginTop: spacing.xs }}>
+            <AnimatedPressable
+              style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
               onPress={() => {
                 reset();
                 onClose();
               }}
             >
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.primaryButton,
-                (!name || !priceInr) && styles.buttonDisabled,
-              ]}
+              <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
+            </AnimatedPressable>
+            <AnimatedPressable
+              style={{
+                flex: 1,
+                backgroundColor: colors.accent,
+                borderRadius: radius.md,
+                paddingVertical: spacing.lg,
+                alignItems: "center",
+                opacity: !name || !priceInr ? 0.5 : 1,
+              }}
               onPress={handleSubmit}
               disabled={!name || !priceInr || submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.accentText} />
               ) : (
-                <Text style={styles.primaryButtonText}>Save</Text>
+                <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Save</Text>
               )}
-            </Pressable>
+            </AnimatedPressable>
           </View>
+        </ScrollView>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrollContent: {
-    paddingTop: 64,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  sectionSpacing: {
-    marginTop: 28,
-    marginBottom: 12,
-  },
-  addButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  emptyText: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  planCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 10,
-  },
-  planCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  planName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  planMeta: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  planDescription: {
-    color: colors.faint,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  statusBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  statusActive: {
-    backgroundColor: "rgba(80,200,120,0.15)",
-  },
-  statusInactive: {
-    backgroundColor: "rgba(154,154,159,0.15)",
-  },
-  statusBadgeText: {
-    color: colors.text,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  txRow: {
-    flexDirection: "row",
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-    alignItems: "center",
-  },
-  txAthlete: {
-    color: colors.text,
-    fontWeight: "600",
-  },
-  txMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  txFailureReason: {
-    color: colors.accent,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  txStatus: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  txStatusFailed: {
-    color: colors.accent,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "flex-end",
-  },
-  modalCard: {
-    backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-  },
-  modalTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: colors.background,
-    color: colors.text,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 12,
-  },
-  intervalRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  intervalOption: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  intervalOptionActive: {
-    borderColor: colors.accent,
-  },
-  intervalOptionText: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "capitalize",
-  },
-  intervalOptionTextActive: {
-    color: colors.text,
-  },
-  modalFooter: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: colors.muted,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-});

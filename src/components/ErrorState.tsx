@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors } from "../theme/colors";
+import { Text, View } from "react-native";
+import { useTheme } from "../theme/ThemeContext";
+import AnimatedPressable from "./AnimatedPressable";
 
 export default function ErrorState({
   message = "Something went wrong loading this.",
@@ -8,35 +9,28 @@ export default function ErrorState({
   message?: string;
   onRetry: () => void;
 }) {
+  const { colors, typography, radius, spacing } = useTheme();
   return (
-    <View style={styles.container}>
-      <Text style={styles.message}>{message}</Text>
-      <Pressable style={styles.button} onPress={onRetry}>
-        <Text style={styles.buttonText}>Retry</Text>
-      </Pressable>
+    <View style={{ alignItems: "center", padding: spacing.xxl }}>
+      <Text
+        style={[
+          typography.body,
+          { color: colors.muted, textAlign: "center", marginBottom: spacing.lg },
+        ]}
+      >
+        {message}
+      </Text>
+      <AnimatedPressable
+        style={{
+          backgroundColor: colors.cardAlt,
+          borderRadius: radius.sm,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.sm + 2,
+        }}
+        onPress={onRetry}
+      >
+        <Text style={[typography.bodyStrong, { color: colors.text }]}>Retry</Text>
+      </AnimatedPressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    padding: 24,
-  },
-  message: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  buttonText: {
-    color: colors.text,
-    fontWeight: "600",
-  },
-});

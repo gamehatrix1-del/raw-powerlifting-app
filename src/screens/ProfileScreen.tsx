@@ -1,56 +1,136 @@
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Text, View } from "react-native";
+import AnimatedPressable from "../components/AnimatedPressable";
+import { useAppAlert } from "../components/AppAlert";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../theme/ThemeContext";
 
-export default function ProfileScreen() {
+function MenuRow({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
+  const { colors, typography, spacing, radius } = useTheme();
+  return (
+    <AnimatedPressable
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: colors.card,
+        borderRadius: radius.md,
+        padding: spacing.lg,
+        marginBottom: spacing.sm + 2,
+      }}
+      onPress={onPress}
+    >
+      <View
+        style={{
+          width: 32, height: 32, borderRadius: 16,
+          backgroundColor: colors.accentMuted,
+          alignItems: "center", justifyContent: "center",
+          marginRight: spacing.md,
+        }}
+      >
+        <Ionicons name={icon} size={16} color={colors.accent} />
+      </View>
+      <Text style={[typography.bodyStrong, { color: colors.text, flex: 1 }]}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+    </AnimatedPressable>
+  );
+}
+
+export default function ProfileScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const alert = useAppAlert();
   const { profile, signOut } = useAuth();
 
   async function handleSignOut() {
     try {
       await signOut();
     } catch (err: any) {
-      Alert.alert("Couldn't log out", err.message ?? "Please try again.");
+      alert("Couldn't log out", err.message ?? "Please try again.");
     }
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.name}>{profile?.full_name ?? "—"}</Text>
-      <Text style={styles.role}>{profile?.role}</Text>
+  const initial = profile?.full_name?.trim()?.[0]?.toUpperCase() ?? "?";
 
-      <Pressable style={styles.button} onPress={handleSignOut}>
-        <Text style={styles.buttonText}>Log Out</Text>
-      </Pressable>
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        padding: spacing.xl,
+        paddingTop: 72,
+      }}
+    >
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: colors.card,
+          borderRadius: radius.lg,
+          paddingVertical: spacing.xxl,
+          marginBottom: spacing.xl,
+        }}
+      >
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: colors.accentMuted,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: spacing.md,
+          }}
+        >
+          <Text style={[typography.title, { color: colors.accent }]}>
+            {initial}
+          </Text>
+        </View>
+        <Text style={[typography.heading, { color: colors.text }]}>
+          {profile?.full_name ?? "—"}
+        </Text>
+        <View
+          style={{
+            marginTop: 6,
+            backgroundColor: colors.accentMuted,
+            borderRadius: radius.pill,
+            paddingHorizontal: spacing.md,
+            paddingVertical: 4,
+          }}
+        >
+          <Text
+            style={[
+              typography.micro,
+              { color: colors.accent, textTransform: "uppercase" },
+            ]}
+          >
+            {profile?.role}
+          </Text>
+        </View>
+      </View>
+
+      <MenuRow icon="create-outline" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
+      <MenuRow icon="shield-checkmark-outline" label="Privacy & Data" onPress={() => navigation.navigate("PrivacyData")} />
+
+      <AnimatedPressable
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.md,
+          paddingVertical: spacing.md + 2,
+          alignItems: "center",
+          marginTop: spacing.lg,
+        }}
+        onPress={handleSignOut}
+      >
+        <Text style={[typography.bodyStrong, { color: colors.error }]}>
+          Log Out
+        </Text>
+      </AnimatedPressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0B0B0C",
-    padding: 24,
-    paddingTop: 80,
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  role: {
-    fontSize: 14,
-    color: "#9A9A9F",
-    textTransform: "capitalize",
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: "#1B1B1E",
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#E33A3A",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});

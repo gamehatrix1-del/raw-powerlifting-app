@@ -1,17 +1,18 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Linking,
-  Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
+import SegmentedControl from "../../components/SegmentedControl";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Exercise, ExerciseCategory } from "../../types/exercise";
 
 const FILTERS: Array<ExerciseCategory | "all"> = [
@@ -21,7 +22,14 @@ const FILTERS: Array<ExerciseCategory | "all"> = [
   "mobility",
 ];
 
+const CATEGORY_ICONS: Record<ExerciseCategory, keyof typeof Ionicons.glyphMap> = {
+  strength: "barbell",
+  cardio: "heart",
+  mobility: "body",
+};
+
 export default function LibraryScreen() {
+  const { colors, typography, spacing, radius } = useTheme();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -61,34 +69,37 @@ export default function LibraryScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Exercise Library</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xl }}>
+      <Text style={[typography.title, { color: colors.text, marginBottom: spacing.lg }]}>
+        Exercise Library
+      </Text>
 
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search exercises"
-        placeholderTextColor={colors.faint}
-        value={search}
-        onChangeText={setSearch}
-      />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.card,
+          borderRadius: radius.md,
+          paddingHorizontal: spacing.md,
+          marginBottom: spacing.md,
+        }}
+      >
+        <Ionicons name="search" size={18} color={colors.faint} />
+        <TextInput
+          style={{ flex: 1, color: colors.text, paddingHorizontal: spacing.sm, paddingVertical: 12, fontSize: 15 }}
+          placeholder="Search exercises"
+          placeholderTextColor={colors.faint}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
 
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f}
-            style={[styles.filterChip, filter === f && styles.filterChipActive]}
-            onPress={() => setFilter(f)}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                filter === f && styles.filterChipTextActive,
-              ]}
-            >
-              {f}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={{ marginBottom: spacing.lg }}>
+        <SegmentedControl
+          options={FILTERS.map((f) => ({ label: f[0].toUpperCase() + f.slice(1), value: f }))}
+          value={filter}
+          onChange={(v) => setFilter(v as ExerciseCategory | "all")}
+        />
       </View>
 
       {loading ? (
@@ -99,26 +110,60 @@ export default function LibraryScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No exercises match.</Text>
+            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
+              No exercises match.
+            </Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.category}</Text>
-                </View>
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: radius.md,
+                padding: spacing.lg,
+                marginBottom: spacing.sm + 2,
+                flexDirection: "row",
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: colors.accentMuted,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: spacing.md,
+                }}
+              >
+                <Ionicons name={CATEGORY_ICONS[item.category]} size={17} color={colors.accent} />
               </View>
-              {item.cue_text ? (
-                <Text style={styles.cueText}>{item.cue_text}</Text>
-              ) : null}
-              {item.demo_video_url ? (
-                <Pressable onPress={() => Linking.openURL(item.demo_video_url!)}>
-                  <Text style={styles.videoLink}>▶ Watch demo</Text>
-                </Pressable>
-              ) : null}
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={[typography.subheading, { color: colors.text, flex: 1 }]}>{item.name}</Text>
+                  <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Text style={[typography.micro, { color: colors.muted, textTransform: "uppercase" }]}>
+                      {item.category}
+                    </Text>
+                  </View>
+                </View>
+                {item.cue_text ? (
+                  <Text style={[typography.caption, { color: colors.muted, marginTop: 6 }]}>{item.cue_text}</Text>
+                ) : null}
+                {item.demo_video_url ? (
+                  <AnimatedPressable
+                    style={{ flexDirection: "row", alignItems: "center", marginTop: spacing.sm, gap: 4 }}
+                    onPress={() => Linking.openURL(item.demo_video_url!)}
+                  >
+                    <Ionicons name="play-circle" size={16} color={colors.accent} />
+                    <Text style={[typography.caption, { color: colors.accent, fontWeight: "700" }]}>
+                      Watch demo
+                    </Text>
+                  </AnimatedPressable>
+                ) : null}
+              </View>
             </View>
           )}
         />
@@ -126,98 +171,3 @@ export default function LibraryScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  searchInput: {
-    backgroundColor: colors.card,
-    color: colors.text,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 12,
-  },
-  filterRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 16,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.card,
-  },
-  filterChipActive: {
-    backgroundColor: colors.accent,
-  },
-  filterChipText: {
-    color: colors.muted,
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "capitalize",
-  },
-  filterChipTextActive: {
-    color: "#fff",
-  },
-  listContent: {
-    paddingBottom: 40,
-  },
-  emptyText: {
-    color: colors.muted,
-    textAlign: "center",
-    marginTop: 40,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 10,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cardName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-  },
-  badge: {
-    backgroundColor: colors.background,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    color: colors.muted,
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-  },
-  cueText: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 6,
-  },
-  videoLink: {
-    color: colors.accent,
-    fontSize: 13,
-    marginTop: 8,
-    fontWeight: "600",
-  },
-});

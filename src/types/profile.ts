@@ -6,6 +6,7 @@ export interface Profile {
   full_name: string;
   phone: string | null;
   avatar_url: string | null;
+  consent_accepted_at: string | null;
   created_at: string;
 }
 
@@ -14,6 +15,7 @@ export interface AthleteProfile {
   user_id: string;
 
   // Section 1: Athlete Profile
+  date_of_birth: string | null;
   age: number | null;
   gender: string | null;
   city: string | null;

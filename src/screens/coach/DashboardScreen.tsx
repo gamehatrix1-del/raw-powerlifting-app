@@ -1,16 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, FlatList, Text, TextInput, View } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
-import { supabase } from "../../lib/supabase";
 import { thisMonday } from "../../lib/dates";
-import { colors } from "../../theme/colors";
+import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../theme/ThemeContext";
 import { Profile } from "../../types/profile";
 
 interface AthleteRow {
@@ -19,9 +14,11 @@ interface AthleteRow {
 }
 
 export default function DashboardScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
   const [rows, setRows] = useState<AthleteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,9 +77,41 @@ export default function DashboardScreen({ navigation }: any) {
     return { label: "Up to date", tone: "ok" as const };
   }
 
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => r.profile.full_name.toLowerCase().includes(q));
+  }, [rows, search]);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Athletes</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xxl }}>
+      <Text style={[typography.title, { color: colors.text, marginBottom: spacing.lg }]}>Athletes</Text>
+
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.card,
+          borderRadius: radius.md,
+          paddingHorizontal: spacing.md,
+          marginBottom: spacing.lg,
+        }}
+      >
+        <Ionicons name="search" size={18} color={colors.faint} />
+        <TextInput
+          style={{ flex: 1, color: colors.text, paddingHorizontal: spacing.sm, paddingVertical: 12, fontSize: 15 }}
+          placeholder="Search athletes"
+          placeholderTextColor={colors.faint}
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+        />
+        {search.length > 0 && (
+          <AnimatedPressable onPress={() => setSearch("")} style={{ padding: 4 }}>
+            <Ionicons name="close-circle" size={18} color={colors.faint} />
+          </AnimatedPressable>
+        )}
+      </View>
 
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
@@ -90,17 +119,29 @@ export default function DashboardScreen({ navigation }: any) {
         <ErrorState message="Couldn't load athletes." onRetry={load} />
       ) : (
         <FlatList
-          data={rows}
+          data={filteredRows}
           keyExtractor={(item) => item.profile.id}
-          contentContainerStyle={styles.listContent}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No athletes have signed up yet.</Text>
+            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
+              {rows.length === 0 ? "No athletes have signed up yet." : "No athletes match your search."}
+            </Text>
           }
           renderItem={({ item }) => {
             const status = statusFor(item);
             return (
-              <Pressable
-                style={styles.card}
+              <AnimatedPressable
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: radius.md,
+                  padding: spacing.lg,
+                  marginBottom: spacing.sm + 2,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
                 onPress={() =>
                   navigation.navigate("AthleteDetail", {
                     athleteId: item.profile.id,
@@ -108,16 +149,27 @@ export default function DashboardScreen({ navigation }: any) {
                   })
                 }
               >
-                <Text style={styles.name}>{item.profile.full_name}</Text>
+                <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 16 }]}>
+                  {item.profile.full_name}
+                </Text>
                 <View
-                  style={[
-                    styles.chip,
-                    status.tone === "warn" ? styles.chipWarn : styles.chipOk,
-                  ]}
+                  style={{
+                    borderRadius: radius.sm,
+                    paddingHorizontal: spacing.sm,
+                    paddingVertical: 4,
+                    backgroundColor: status.tone === "warn" ? colors.warningMuted : colors.successMuted,
+                  }}
                 >
-                  <Text style={styles.chipText}>{status.label}</Text>
+                  <Text
+                    style={[
+                      typography.micro,
+                      { color: status.tone === "warn" ? colors.warning : colors.success, letterSpacing: 0 },
+                    ]}
+                  >
+                    {status.label}
+                  </Text>
                 </View>
-              </Pressable>
+              </AnimatedPressable>
             );
           }}
         />
@@ -125,56 +177,3 @@ export default function DashboardScreen({ navigation }: any) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 20,
-  },
-  listContent: {
-    paddingBottom: 40,
-  },
-  emptyText: {
-    color: colors.muted,
-    textAlign: "center",
-    marginTop: 40,
-  },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 10,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  name: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  chip: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  chipWarn: {
-    backgroundColor: "rgba(227,58,58,0.15)",
-  },
-  chipOk: {
-    backgroundColor: "rgba(80,200,120,0.15)",
-  },
-  chipText: {
-    color: colors.text,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-});

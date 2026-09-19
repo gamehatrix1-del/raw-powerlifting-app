@@ -1,11 +1,12 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import ProgramScreen from "../screens/athlete/ProgramScreen";
-import WorkoutLogScreen from "../screens/athlete/WorkoutLogScreen";
+import EditProfileScreen from "../screens/EditProfileScreen";
+import PrivacyDataScreen from "../screens/PrivacyDataScreen";
+import ProfileScreen from "../screens/ProfileScreen";
 import { useTheme } from "../theme/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
-export default function AthleteProgramStack() {
+export default function ProfileStack() {
   const { colors } = useTheme();
   return (
     <Stack.Navigator
@@ -16,14 +17,19 @@ export default function AthleteProgramStack() {
       }}
     >
       <Stack.Screen
-        name="ProgramHome"
-        component={ProgramScreen}
+        name="ProfileHome"
+        component={ProfileScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="WorkoutLog"
-        component={WorkoutLogScreen}
-        options={({ route }: any) => ({ title: route.params?.dayLabel ?? "Workout" })}
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: "Edit Profile" }}
+      />
+      <Stack.Screen
+        name="PrivacyData"
+        component={PrivacyDataScreen}
+        options={{ title: "Privacy & Data" }}
       />
     </Stack.Navigator>
   );

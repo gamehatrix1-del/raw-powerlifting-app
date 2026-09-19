@@ -19,6 +19,16 @@ export function dateKey(iso: string): string {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
+// Formats an ISO date (YYYY-MM-DD) as DD-MM-YYYY for display throughout the
+// app. Any string that isn't a clean YYYY-MM-DD is returned unchanged.
+export function formatDisplayDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!match) return iso;
+  const [, y, m, d] = match;
+  return `${d}-${m}-${y}`;
+}
+
 export function addInterval(
   isoDate: string,
   interval: "monthly" | "quarterly" | "yearly"

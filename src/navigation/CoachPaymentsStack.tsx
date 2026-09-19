@@ -1,11 +1,11 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import ProgramScreen from "../screens/athlete/ProgramScreen";
-import WorkoutLogScreen from "../screens/athlete/WorkoutLogScreen";
+import PaymentsScreen from "../screens/coach/PaymentsScreen";
+import TransactionDetailScreen from "../screens/TransactionDetailScreen";
 import { useTheme } from "../theme/ThemeContext";
 
 const Stack = createNativeStackNavigator();
 
-export default function AthleteProgramStack() {
+export default function CoachPaymentsStack() {
   const { colors } = useTheme();
   return (
     <Stack.Navigator
@@ -16,14 +16,14 @@ export default function AthleteProgramStack() {
       }}
     >
       <Stack.Screen
-        name="ProgramHome"
-        component={ProgramScreen}
+        name="PaymentsHome"
+        component={PaymentsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="WorkoutLog"
-        component={WorkoutLogScreen}
-        options={({ route }: any) => ({ title: route.params?.dayLabel ?? "Workout" })}
+        name="TransactionDetail"
+        component={TransactionDetailScreen}
+        options={{ title: "Transaction" }}
       />
     </Stack.Navigator>
   );

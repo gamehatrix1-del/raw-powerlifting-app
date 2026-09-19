@@ -1,19 +1,15 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import RazorpayCheckout from "react-native-razorpay";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import AnimatedPressable from "../../components/AnimatedPressable";
+import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
-import { addInterval } from "../../lib/dates";
+import { addInterval, formatDisplayDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Plan } from "../../types/plan";
 
 interface PaymentRow {
@@ -26,7 +22,9 @@ interface PaymentRow {
   billing_interval: Plan["billing_interval"];
 }
 
-export default function MembershipScreen() {
+export default function MembershipScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius, isDark } = useTheme();
+  const alert = useAppAlert();
   const { session } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -107,10 +105,10 @@ export default function MembershipScreen() {
       // The razorpay-webhook Edge Function marks the payment "paid"
       // server-side; give it a moment to land before refreshing.
       setTimeout(load, 1500);
-      Alert.alert("Payment received", "Confirming with your coach shortly.");
+      alert("Payment received", "Confirming with your coach shortly.");
     } catch (err: any) {
       if (err?.code !== undefined || err?.description) {
-        Alert.alert(
+        alert(
           "Payment didn't go through",
           err.description ?? "Please try again."
         );
@@ -122,7 +120,7 @@ export default function MembershipScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -130,7 +128,7 @@ export default function MembershipScreen() {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
         <ErrorState message="Couldn't load your membership." onRetry={load} />
       </View>
     );
@@ -141,192 +139,172 @@ export default function MembershipScreen() {
   const showFailedBanner = mostRecent?.status === "failed";
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Membership</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xl }}>
+      <Text style={[typography.title, { color: colors.text, marginBottom: spacing.lg }]}>Membership</Text>
 
       {showFailedBanner && (
-        <View style={styles.failedBanner}>
-          <Text style={styles.failedBannerText}>
+        <View
+          style={{
+            backgroundColor: colors.errorMuted,
+            borderRadius: radius.md,
+            padding: spacing.md + 2,
+            marginBottom: spacing.lg,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.sm,
+          }}
+        >
+          <Ionicons name="alert-circle" size={18} color={colors.error} />
+          <Text style={[typography.caption, { color: colors.error, fontWeight: "700", flex: 1 }]}>
             Your last payment didn't go through. Try again below.
           </Text>
         </View>
       )}
 
-      {latestPaid ? (
-        <View style={styles.currentPlanCard}>
-          <Text style={styles.currentPlanLabel}>Current plan</Text>
-          <Text style={styles.currentPlanName}>{latestPaid.plan_name}</Text>
-          {latestPaid.paid_at && (
-            <Text style={styles.currentPlanRenewal}>
-              Renews {addInterval(latestPaid.paid_at, latestPaid.billing_interval)}
-            </Text>
+      <View style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.xxl }}>
+        <View style={{ padding: spacing.xl }}>
+          <Svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
+            <Defs>
+              <LinearGradient id="membershipHero" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor={colors.accent} stopOpacity={isDark ? 0.3 : 0.13} />
+                <Stop offset="1" stopColor={colors.card} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#membershipHero)" />
+          </Svg>
+          {latestPaid ? (
+            <>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="shield-checkmark" size={14} color={colors.accent} />
+                <Text style={[typography.micro, { color: colors.accent, letterSpacing: 1 }]}>ACTIVE PLAN</Text>
+              </View>
+              <Text style={[typography.display, { color: colors.text, fontSize: 24, marginTop: 8 }]}>{latestPaid.plan_name}</Text>
+              {latestPaid.paid_at && (
+                <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>
+                  Renews {formatDisplayDate(addInterval(latestPaid.paid_at, latestPaid.billing_interval))}
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={[typography.heading, { color: colors.text }]}>No active membership</Text>
+              <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>Pick a plan below to get started</Text>
+            </>
           )}
         </View>
-      ) : (
-        <View style={styles.currentPlanCard}>
-          <Text style={styles.currentPlanLabel}>No active membership</Text>
-          <Text style={styles.currentPlanRenewal}>Pick a plan below</Text>
-        </View>
-      )}
+      </View>
 
-      <Text style={styles.sectionTitle}>Plans</Text>
+      <Text style={[typography.subheading, { color: colors.text, marginBottom: spacing.sm + 2 }]}>Plans</Text>
       {plans.length === 0 && (
-        <Text style={styles.emptyText}>
+        <Text style={[typography.caption, { color: colors.muted }]}>
           Your coach hasn't published any plans yet. Check back soon.
         </Text>
       )}
-      {plans.map((plan) => (
-        <View key={plan.id} style={styles.planCard}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.planName}>{plan.name}</Text>
-            <Text style={styles.planMeta}>
-              ₹{plan.price_inr} / {plan.billing_interval}
-            </Text>
-          </View>
-          <Pressable
-            style={styles.payButton}
-            onPress={() => handlePayNow(plan)}
-            disabled={payingPlanId === plan.id}
+      {plans.map((plan) => {
+        const isCurrent = latestPaid?.plan_name === plan.name;
+        return (
+          <View
+            key={plan.id}
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: radius.lg,
+              padding: spacing.lg,
+              marginBottom: spacing.sm + 2,
+              borderWidth: isCurrent ? 1.5 : 0,
+              borderColor: colors.accent,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
           >
-            {payingPlanId === plan.id ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.payButtonText}>Pay Now</Text>
-            )}
-          </Pressable>
-        </View>
-      ))}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 16 }]}>{plan.name}</Text>
+                {isCurrent && (
+                  <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0 }]}>CURRENT</Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 4 }}>
+                <Text style={[typography.display, { color: colors.text, fontSize: 22, fontVariant: ["tabular-nums"] }]}>
+                  ₹{plan.price_inr.toLocaleString("en-IN")}
+                </Text>
+                <Text style={[typography.caption, { color: colors.muted }]}>/ {plan.billing_interval}</Text>
+              </View>
+            </View>
+            <AnimatedPressable
+              style={{
+                backgroundColor: colors.accent,
+                borderRadius: radius.pill,
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.sm + 2,
+                minWidth: 90,
+                alignItems: "center",
+              }}
+              onPress={() => handlePayNow(plan)}
+              disabled={payingPlanId === plan.id}
+            >
+              {payingPlanId === plan.id ? (
+                <ActivityIndicator color={colors.accentText} size="small" />
+              ) : (
+                <Text style={[typography.caption, { color: colors.accentText, fontWeight: "700" }]}>Pay Now</Text>
+              )}
+            </AnimatedPressable>
+          </View>
+        );
+      })}
 
-      <Text style={styles.sectionTitle}>Payment history</Text>
+      <Text style={[typography.subheading, { color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm + 2 }]}>
+        Payment history
+      </Text>
       <FlatList
         data={payments}
         keyExtractor={(item) => item.id}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: spacing.xxl }}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No payments yet.</Text>
+          <Text style={[typography.caption, { color: colors.muted }]}>No payments yet.</Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.historyRow}>
-            <Text style={styles.historyPlan}>{item.plan_name}</Text>
-            <Text
-              style={[
-                styles.historyStatus,
-                item.status === "failed" && styles.historyStatusFailed,
-              ]}
+          <AnimatedPressable
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: colors.card,
+              borderRadius: radius.md,
+              padding: spacing.md + 2,
+              marginBottom: spacing.sm,
+              gap: spacing.sm,
+            }}
+            onPress={() => navigation.navigate("TransactionDetail", { paymentId: item.id })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.body, { color: colors.text }]}>{item.plan_name}</Text>
+              <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
+                ₹{item.amount_inr}
+              </Text>
+            </View>
+            <View
+              style={{
+                borderRadius: 6,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: 4,
+                backgroundColor: item.status === "failed" ? colors.errorMuted : colors.successMuted,
+              }}
             >
-              ₹{item.amount_inr} · {item.status}
-            </Text>
-          </View>
+              <Text
+                style={[
+                  typography.micro,
+                  { color: item.status === "failed" ? colors.error : colors.success, letterSpacing: 0 },
+                ]}
+              >
+                {item.status.toUpperCase()}
+              </Text>
+            </View>
+          </AnimatedPressable>
         )}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  failedBanner: {
-    backgroundColor: "rgba(227,58,58,0.15)",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
-  },
-  failedBannerText: {
-    color: colors.accent,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  currentPlanCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 24,
-  },
-  currentPlanLabel: {
-    color: colors.muted,
-    fontSize: 12,
-  },
-  currentPlanName: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  currentPlanRenewal: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
-  },
-  planCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  planName: {
-    color: colors.text,
-    fontWeight: "600",
-  },
-  planMeta: {
-    color: colors.muted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  payButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  payButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  emptyText: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  historyRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 8,
-  },
-  historyPlan: {
-    color: colors.text,
-  },
-  historyStatus: {
-    color: colors.muted,
-    fontSize: 13,
-  },
-  historyStatusFailed: {
-    color: colors.accent,
-  },
-});

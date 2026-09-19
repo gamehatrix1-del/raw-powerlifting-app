@@ -1,17 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
+import SegmentedControl from "../../components/SegmentedControl";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
-import { colors } from "../../theme/colors";
+import { useTheme } from "../../theme/ThemeContext";
 import { Program, ProgramDay } from "../../types/program";
 
 interface DayExercise {
@@ -26,6 +22,7 @@ interface DayExercise {
 }
 
 export default function ProgramScreen({ navigation }: any) {
+  const { colors, typography, spacing, radius } = useTheme();
   const { session } = useAuth();
   const [program, setProgram] = useState<Program | null>(null);
   const [days, setDays] = useState<ProgramDay[]>([]);
@@ -126,7 +123,14 @@ export default function ProgramScreen({ navigation }: any) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -134,7 +138,14 @@ export default function ProgramScreen({ navigation }: any) {
 
   if (error) {
     return (
-      <View style={styles.center}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <ErrorState message="Couldn't load your program." onRetry={load} />
       </View>
     );
@@ -142,9 +153,29 @@ export default function ProgramScreen({ navigation }: any) {
 
   if (!program || days.length === 0) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyTitle}>No program yet</Text>
-        <Text style={styles.emptyBody}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: spacing.xxl,
+        }}
+      >
+        <View
+          style={{
+            width: 72, height: 72, borderRadius: 36,
+            backgroundColor: colors.accentMuted,
+            alignItems: "center", justifyContent: "center",
+            marginBottom: spacing.lg,
+          }}
+        >
+          <Ionicons name="calendar-outline" size={30} color={colors.accent} />
+        </View>
+        <Text style={[typography.heading, { color: colors.text, marginBottom: 6 }]}>
+          No program yet
+        </Text>
+        <Text style={[typography.body, { color: colors.muted, textAlign: "center" }]}>
           Your coach hasn't assigned a week. Check back soon.
         </Text>
       </View>
@@ -155,50 +186,126 @@ export default function ProgramScreen({ navigation }: any) {
   const activeExercises = exercisesByDay[activeProgramDay.id] ?? [];
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{program.name}</Text>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: 60,
+        paddingHorizontal: spacing.xl,
+      }}
+    >
+      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.lg }]}>
+        {program.name}
+      </Text>
 
-      <View style={styles.dayTabs}>
-        {days.map((d, i) => (
-          <Text
-            key={d.id}
-            onPress={() => setActiveDay(i)}
-            style={[styles.dayTab, activeDay === i && styles.dayTabActive]}
-          >
-            {d.day_number}
-          </Text>
-        ))}
-      </View>
+      <SegmentedControl
+        options={days.map((d) => ({ label: String(d.day_number), value: d.id }))}
+        value={activeProgramDay.id}
+        onChange={(id) => setActiveDay(days.findIndex((d) => d.id === id))}
+      />
 
-      <Text style={styles.dayLabel}>{activeProgramDay.day_label}</Text>
+      <Text style={[typography.subheading, { color: colors.text, marginTop: spacing.lg, marginBottom: spacing.md }]}>
+        {activeProgramDay.day_label}
+      </Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {activeProgramDay.is_rest_day ? (
-          <View style={styles.restCard}>
-            <Text style={styles.restText}>Rest day. Recover up.</Text>
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: radius.lg,
+              padding: spacing.xxl,
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="bed-outline" size={30} color={colors.faint} style={{ marginBottom: spacing.sm }} />
+            <Text style={[typography.body, { color: colors.muted }]}>
+              Rest day. Recover up.
+            </Text>
           </View>
         ) : activeExercises.length === 0 ? (
-          <Text style={styles.emptyBody}>Nothing programmed for this day.</Text>
+          <Text style={[typography.body, { color: colors.muted, textAlign: "center" }]}>
+            Nothing programmed for this day.
+          </Text>
         ) : (
           <>
-            {activeExercises.map((e) => (
-              <View key={e.id} style={styles.exerciseCard}>
-                <Text style={styles.exerciseName}>{e.name}</Text>
-                <Text style={styles.exerciseMeta}>
-                  {e.sets} sets x {e.reps}
-                  {e.target_load ? ` @ ${e.target_load}` : ""}
-                  {e.target_rpe ? ` · RPE ${e.target_rpe}` : ""}
-                </Text>
-                {e.tempo_note ? (
-                  <Text style={styles.exerciseNote}>{e.tempo_note}</Text>
-                ) : null}
-                {e.cue_text ? (
-                  <Text style={styles.exerciseCue}>{e.cue_text}</Text>
-                ) : null}
+            {activeExercises.map((e, index) => (
+              <View
+                key={e.id}
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: radius.lg,
+                  padding: spacing.lg,
+                  marginBottom: spacing.sm + 2,
+                  flexDirection: "row",
+                }}
+              >
+                <View
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    backgroundColor: colors.accentMuted,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: spacing.md,
+                  }}
+                >
+                  <Text style={[typography.caption, { color: colors.accent, fontWeight: "700" }]}>
+                    {index + 1}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.subheading, { color: colors.text, fontSize: 16 }]}>{e.name}</Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: spacing.sm }}>
+                    <View style={{ backgroundColor: colors.background, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={[typography.micro, { color: colors.text, letterSpacing: 0 }]}>
+                        {e.sets} × {e.reps}
+                      </Text>
+                    </View>
+                    {e.target_load && (
+                      <View style={{ backgroundColor: colors.background, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={[typography.micro, { color: colors.text, letterSpacing: 0 }]}>{e.target_load}</Text>
+                      </View>
+                    )}
+                    {e.target_rpe && (
+                      <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0 }]}>RPE {e.target_rpe}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {e.tempo_note ? (
+                    <Text style={[typography.caption, { color: colors.faint, marginTop: spacing.sm }]}>
+                      {e.tempo_note}
+                    </Text>
+                  ) : null}
+                  {e.cue_text ? (
+                    <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: spacing.sm, gap: 4 }}>
+                      <Ionicons name="bulb-outline" size={13} color={colors.accent} style={{ marginTop: 2 }} />
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: colors.accent, fontStyle: "italic", flex: 1 },
+                        ]}
+                      >
+                        {e.cue_text}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
             ))}
-            <Pressable
-              style={styles.logWorkoutButton}
+            <AnimatedPressable
+              style={{
+                backgroundColor: colors.accent,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.lg,
+                alignItems: "center",
+                marginTop: spacing.xs,
+                flexDirection: "row",
+                justifyContent: "center",
+                gap: spacing.sm,
+              }}
               onPress={() =>
                 navigation.navigate("WorkoutLog", {
                   programDayId: activeProgramDay.id,
@@ -206,120 +313,14 @@ export default function ProgramScreen({ navigation }: any) {
                 })
               }
             >
-              <Text style={styles.logWorkoutButtonText}>Log this workout</Text>
-            </Pressable>
+              <Ionicons name="play" size={16} color={colors.accentText} />
+              <Text style={[typography.bodyStrong, { color: colors.accentText, fontSize: 16 }]}>
+                Log this workout
+              </Text>
+            </AnimatedPressable>
           </>
         )}
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingTop: 64,
-    paddingHorizontal: 24,
-  },
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  emptyBody: {
-    color: colors.muted,
-    fontSize: 14,
-    textAlign: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  dayTabs: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
-  dayTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    textAlign: "center",
-    backgroundColor: colors.card,
-    color: colors.muted,
-    fontWeight: "600",
-    overflow: "hidden",
-  },
-  dayTabActive: {
-    backgroundColor: colors.accent,
-    color: "#fff",
-  },
-  dayLabel: {
-    color: colors.muted,
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  restCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 20,
-    alignItems: "center",
-  },
-  restText: {
-    color: colors.muted,
-    fontSize: 15,
-  },
-  exerciseCard: {
-    backgroundColor: colors.card,
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 10,
-  },
-  exerciseName: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  exerciseMeta: {
-    color: colors.muted,
-    fontSize: 13,
-    marginTop: 4,
-  },
-  exerciseNote: {
-    color: colors.faint,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  exerciseCue: {
-    color: colors.accent,
-    fontSize: 12,
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  logWorkoutButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  logWorkoutButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});

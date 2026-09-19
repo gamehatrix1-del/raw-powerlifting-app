@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { colors } from "../theme/colors";
+import { useTheme } from "../theme/ThemeContext";
 import AthleteDetailScreen from "../screens/coach/AthleteDetailScreen";
 import DashboardScreen from "../screens/coach/DashboardScreen";
 import ProgramBuilderScreen from "../screens/coach/ProgramBuilderScreen";
@@ -7,6 +7,7 @@ import ProgramBuilderScreen from "../screens/coach/ProgramBuilderScreen";
 const Stack = createNativeStackNavigator();
 
 export default function CoachDashboardStack() {
+  const { colors } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{

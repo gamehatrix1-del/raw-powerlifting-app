@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/athlete/HomeScreen";
 import LibraryScreen from "../screens/athlete/LibraryScreen";
-import MembershipScreen from "../screens/athlete/MembershipScreen";
 import ProgressScreen from "../screens/athlete/ProgressScreen";
-import ProfileScreen from "../screens/ProfileScreen";
+import AthleteMembershipStack from "./AthleteMembershipStack";
 import AthleteProgramStack from "./AthleteProgramStack";
-import { colors } from "../theme/colors";
+import ProfileStack from "./ProfileStack";
+import { useTheme } from "../theme/ThemeContext";
 
 const Tab = createBottomTabNavigator();
 
@@ -29,6 +29,7 @@ const OUTLINE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 export default function AthleteNavigator() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -58,10 +59,10 @@ export default function AthleteNavigator() {
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen
         name="Membership"
-        component={MembershipScreen}
+        component={AthleteMembershipStack}
         options={{ tabBarLabel: "Plans" }}
       />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileStack} />
     </Tab.Navigator>
   );
 }
