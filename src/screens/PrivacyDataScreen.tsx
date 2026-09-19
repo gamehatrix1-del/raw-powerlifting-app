@@ -1,14 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ActivityIndicator, Linking, ScrollView, Share, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Share, Text, View } from "react-native";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAppAlert } from "../components/AppAlert";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import { useTheme } from "../theme/ThemeContext";
 
-const PRIVACY_POLICY_URL = "https://claude.ai/artifact/L6NaRsJZk1XzpK44kbzv9u#privacy";
-const TERMS_URL = "https://claude.ai/artifact/L6NaRsJZk1XzpK44kbzv9u#terms";
+function SectionLabel({ children }: { children: string }) {
+  const { colors, typography, spacing } = useTheme();
+  return (
+    <Text
+      style={[
+        typography.micro,
+        { color: colors.faint, marginTop: spacing.xl, marginBottom: spacing.sm, letterSpacing: 1 },
+      ]}
+    >
+      {children}
+    </Text>
+  );
+}
 
 function Row({
   icon,
@@ -62,7 +73,7 @@ function Row({
   );
 }
 
-export default function PrivacyDataScreen() {
+export default function PrivacyDataScreen({ navigation }: any) {
   const { colors, typography, spacing } = useTheme();
   const alert = useAppAlert();
   const { session, profile, athleteProfile, signOut } = useAuth();
@@ -125,22 +136,27 @@ export default function PrivacyDataScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: spacing.xl, paddingBottom: spacing.xxl }}
     >
-      <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.lg, lineHeight: 19 }]}>
-        RPA collects your training and health data only to run your coaching program. Here's how to see what's stored, get a copy, or ask us to erase it — rights guaranteed under India's Digital Personal Data Protection Act.
+      <Text style={[typography.caption, { color: colors.muted, lineHeight: 19 }]}>
+        RPA collects your training and health data only to run your coaching program. Here's how to read what we
+        collect, get a copy, manage your account, or ask us to erase it — rights guaranteed under India's Digital
+        Personal Data Protection Act.
       </Text>
 
+      <SectionLabel>LEGAL</SectionLabel>
       <Row
         icon="document-text-outline"
         title="Privacy Policy"
         subtitle="What we collect and why"
-        onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+        onPress={() => navigation.navigate("PrivacyPolicy")}
       />
       <Row
         icon="reader-outline"
         title="Terms of Service"
         subtitle="The rules of using RPA"
-        onPress={() => Linking.openURL(TERMS_URL)}
+        onPress={() => navigation.navigate("TermsOfService")}
       />
+
+      <SectionLabel>YOUR DATA</SectionLabel>
       <Row
         icon="download-outline"
         title="Download my data"
@@ -155,6 +171,14 @@ export default function PrivacyDataScreen() {
         onPress={confirmDelete}
         destructive
         busy={deleting}
+      />
+
+      <SectionLabel>ACCOUNT</SectionLabel>
+      <Row
+        icon="lock-closed-outline"
+        title="Change password"
+        subtitle="Update the password you log in with"
+        onPress={() => navigation.navigate("ChangePassword")}
       />
     </ScrollView>
   );

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
@@ -188,12 +189,26 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
         <Text style={[typography.body, { color: colors.muted }]}>No programs assigned yet.</Text>
       ) : (
         programs.map((item) => (
-          <View key={item.id} style={{ backgroundColor: colors.card, borderRadius: radius.sm, padding: spacing.md + 2, marginBottom: spacing.sm }}>
-            <Text style={[typography.bodyStrong, { color: colors.text }]}>{item.name}</Text>
-            <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
-              Week of {formatDisplayDate(item.week_start_date)} · {item.status}
-            </Text>
-          </View>
+          <AnimatedPressable
+            key={item.id}
+            style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md + 2, marginBottom: spacing.sm, flexDirection: "row", alignItems: "center" }}
+            onPress={() =>
+              navigation.navigate("ProgramHistoryDetail", {
+                programId: item.id,
+                programName: item.name,
+                weekStartDate: item.week_start_date,
+                status: item.status,
+              })
+            }
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.bodyStrong, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
+                Week of {formatDisplayDate(item.week_start_date)} · {item.status}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+          </AnimatedPressable>
         ))
       )}
     </ScrollView>

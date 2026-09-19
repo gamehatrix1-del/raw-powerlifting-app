@@ -3,6 +3,7 @@ import { useTheme } from "../theme/ThemeContext";
 import AthleteDetailScreen from "../screens/coach/AthleteDetailScreen";
 import DashboardScreen from "../screens/coach/DashboardScreen";
 import ProgramBuilderScreen from "../screens/coach/ProgramBuilderScreen";
+import ProgramHistoryDetailScreen from "../screens/coach/ProgramHistoryDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -30,6 +31,11 @@ export default function CoachDashboardStack() {
         name="ProgramBuilder"
         component={ProgramBuilderScreen}
         options={{ title: "Build Program" }}
+      />
+      <Stack.Screen
+        name="ProgramHistoryDetail"
+        component={ProgramHistoryDetailScreen}
+        options={({ route }: any) => ({ title: route.params?.programName ?? "Program" })}
       />
     </Stack.Navigator>
   );

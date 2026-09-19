@@ -181,6 +181,15 @@ export default function LoginScreen({ navigation }: any) {
           />
 
           <AnimatedPressable
+            style={{ alignSelf: "flex-end", marginTop: -spacing.sm, marginBottom: spacing.sm }}
+            onPress={() => navigation.navigate("ForgotPassword")}
+          >
+            <Text style={[typography.caption, { color: colors.accent, fontWeight: "700" }]}>
+              Forgot password?
+            </Text>
+          </AnimatedPressable>
+
+          <AnimatedPressable
             style={{
               backgroundColor: colors.accent,
               borderRadius: 12,

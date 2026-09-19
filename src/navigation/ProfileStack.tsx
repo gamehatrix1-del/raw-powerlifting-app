@@ -1,7 +1,10 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import PrivacyDataScreen from "../screens/PrivacyDataScreen";
+import PrivacyPolicyScreen from "../screens/PrivacyPolicyScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import TermsOfServiceScreen from "../screens/TermsOfServiceScreen";
 import { useTheme } from "../theme/ThemeContext";
 
 const Stack = createNativeStackNavigator();
@@ -30,6 +33,21 @@ export default function ProfileStack() {
         name="PrivacyData"
         component={PrivacyDataScreen}
         options={{ title: "Privacy & Data" }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ title: "Privacy Policy" }}
+      />
+      <Stack.Screen
+        name="TermsOfService"
+        component={TermsOfServiceScreen}
+        options={{ title: "Terms of Service" }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: "Change Password" }}
       />
     </Stack.Navigator>
   );

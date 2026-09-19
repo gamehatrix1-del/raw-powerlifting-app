@@ -270,7 +270,7 @@ export default function EditProfileScreen({ navigation }: any) {
         contentContainerStyle={{ padding: spacing.xl, paddingBottom: spacing.xxl * 2 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Section title="Basic Info" icon="person" expanded={expanded === "basics"} onToggle={() => toggle("basics")}>
+        <Section title="Account Info" icon="person" expanded={expanded === "basics"} onToggle={() => toggle("basics")}>
           <AppTextInput label="Full Name" value={fullName} onChangeText={setFullName} />
           <AppTextInput label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
         </Section>

@@ -24,6 +24,8 @@ interface AuthContextValue {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAthleteProfile: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -159,6 +161,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (error) throw error;
   }
 
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  }
+
+  async function changePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -170,6 +182,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         signUp,
         signOut,
         refreshAthleteProfile,
+        resetPassword,
+        changePassword,
       }}
     >
       {children}

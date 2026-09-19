@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   ScrollView,
   Text,
@@ -20,8 +19,6 @@ import { useTheme } from "../../theme/ThemeContext";
 const HERO_HEIGHT = 240;
 const LOGO_WIDTH = 148;
 const LOGO_HEIGHT = LOGO_WIDTH * (1151 / 1597);
-const PRIVACY_POLICY_URL = "https://claude.ai/artifact/L6NaRsJZk1XzpK44kbzv9u#privacy";
-const TERMS_URL = "https://claude.ai/artifact/L6NaRsJZk1XzpK44kbzv9u#terms";
 
 // Self-signup always creates an athlete account. There's a single coach
 // (Rajat); that account is promoted manually with one SQL statement after
@@ -161,11 +158,11 @@ export default function SignupScreen({ navigation }: any) {
             </View>
             <Text style={[typography.caption, { color: colors.muted, flex: 1, lineHeight: 18 }]}>
               I agree to the{" "}
-              <Text style={{ color: colors.accent, fontWeight: "700" }} onPress={() => Linking.openURL(TERMS_URL)}>
+              <Text style={{ color: colors.accent, fontWeight: "700" }} onPress={() => navigation.navigate("TermsOfService")}>
                 Terms of Service
               </Text>{" "}
               and{" "}
-              <Text style={{ color: colors.accent, fontWeight: "700" }} onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+              <Text style={{ color: colors.accent, fontWeight: "700" }} onPress={() => navigation.navigate("PrivacyPolicy")}>
                 Privacy Policy
               </Text>
               , including the collection of training and health data for coaching purposes.
