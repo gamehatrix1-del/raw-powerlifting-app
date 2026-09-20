@@ -108,7 +108,7 @@ export default function PaymentsScreen({ navigation }: any) {
     load();
   }
 
-  async function togglePlanActive(plan: Plan) {
+  async function applyPlanToggle(plan: Plan) {
     const { error } = await supabase
       .from("plans")
       .update({ is_active: !plan.is_active })
@@ -118,6 +118,21 @@ export default function PaymentsScreen({ navigation }: any) {
       return;
     }
     load();
+  }
+
+  function togglePlanActive(plan: Plan) {
+    if (!plan.is_active) {
+      applyPlanToggle(plan);
+      return;
+    }
+    alert(
+      "Deactivate this plan?",
+      `Athletes already on ${plan.name} keep their membership. New athletes won't be able to select it.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Deactivate", style: "destructive", onPress: () => applyPlanToggle(plan) },
+      ]
+    );
   }
 
   if (loading) {

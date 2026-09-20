@@ -328,7 +328,7 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       <View style={{ flexDirection: "row", gap: spacing.md }}>
-        <StatTile icon="flame" value={String(streak)} label={streak === 1 ? "Day streak" : "Day streak"} tone="accent" />
+        <StatTile icon="flame" value={String(streak)} label="Day streak" tone="accent" />
         <StatTile icon="checkmark-done" value={`${doneThisWeek}/${plannedThisWeek || "–"}`} label="Sessions this week" tone="success" />
       </View>
     </ScrollView>

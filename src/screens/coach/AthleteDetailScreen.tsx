@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import StatTile from "../../components/StatTile";
 import { formatDisplayDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
@@ -127,6 +128,12 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
         </View>
       ) : (
         <>
+          <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: spacing.xl }}>
+            <StatTile icon="barbell" value={bestLift(p.squat_1rm, p.squat_best_3rm, p.squat_competition_pr)} label="Squat (kg)" tone="accent" />
+            <StatTile icon="barbell" value={bestLift(p.bench_1rm, p.bench_best_3rm, p.bench_competition_pr)} label="Bench (kg)" tone="success" />
+            <StatTile icon="barbell" value={bestLift(p.deadlift_1rm, p.deadlift_best_3rm, p.deadlift_competition_pr)} label="Deadlift (kg)" tone="neutral" />
+          </View>
+
           <Card title="Profile">
             <Row label="Age" value={p.age} />
             <Row label="Gender" value={p.gender} />
@@ -243,6 +250,11 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
       )}
     </ScrollView>
   );
+}
+
+function bestLift(oneRm: number | null, threeRm: number | null, compPr: number | null): string {
+  const best = compPr ?? oneRm ?? threeRm;
+  return best ? String(best) : "–";
 }
 
 function fmtLift(oneRm: number | null, threeRm: number | null, compPr: number | null) {

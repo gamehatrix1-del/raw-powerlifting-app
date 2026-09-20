@@ -412,27 +412,31 @@ export default function DashboardScreen({ navigation }: any) {
                         {status.label}
                       </Text>
                     </View>
-                  </View>
-
-                  <View style={{ alignItems: "flex-end", gap: 6, marginLeft: spacing.sm }}>
-                    {item.unreadCount > 0 && (
-                      <View
-                        style={{
-                          minWidth: 19, height: 19, borderRadius: 9.5,
-                          paddingHorizontal: 5,
-                          backgroundColor: colors.accent,
-                          alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        <Text style={[typography.micro, { color: colors.accentText, letterSpacing: 0, fontSize: 10 }]}>
-                          {item.unreadCount}
+                    {payment.tone !== "ok" && (
+                      <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, gap: 4 }}>
+                        <Ionicons name="card-outline" size={11} color={toneColor(payment.tone)} />
+                        <Text style={[typography.caption, { color: toneColor(payment.tone), fontSize: 11.5 }]} numberOfLines={1}>
+                          {payment.label}
                         </Text>
                       </View>
                     )}
-                    {payment.tone !== "ok" && (
-                      <Ionicons name="card" size={15} color={toneColor(payment.tone)} />
-                    )}
                   </View>
+
+                  {item.unreadCount > 0 && (
+                    <View
+                      style={{
+                        minWidth: 19, height: 19, borderRadius: 9.5,
+                        paddingHorizontal: 5,
+                        backgroundColor: colors.accent,
+                        alignItems: "center", justifyContent: "center",
+                        marginLeft: spacing.sm,
+                      }}
+                    >
+                      <Text style={[typography.micro, { color: colors.accentText, letterSpacing: 0, fontSize: 10 }]}>
+                        {item.unreadCount}
+                      </Text>
+                    </View>
+                  )}
 
                   <Ionicons name="chevron-forward" size={16} color={colors.faint} style={{ marginLeft: spacing.xs }} />
                 </View>
