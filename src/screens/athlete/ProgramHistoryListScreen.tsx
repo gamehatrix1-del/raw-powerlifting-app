@@ -4,7 +4,7 @@ import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
-import { formatDisplayDate } from "../../lib/dates";
+import { formatDisplayDate, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Program } from "../../types/program";
@@ -21,10 +21,13 @@ export default function ProgramHistoryListScreen({ navigation }: any) {
     setLoading(true);
     setError(false);
 
+    // Strictly before this week — the current week already has its own
+    // live view on the Program tab, so it shouldn't also show up here.
     const { data, error: loadError } = await supabase
       .from("programs")
       .select("*")
       .eq("athlete_id", session.user.id)
+      .lt("week_start_date", thisMonday())
       .order("week_start_date", { ascending: false });
 
     if (loadError) {
