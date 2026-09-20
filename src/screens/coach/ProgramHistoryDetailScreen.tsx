@@ -41,7 +41,7 @@ interface LoggedSet {
   coach_note_at: string | null;
 }
 
-export default function ProgramHistoryDetailScreen({ route }: any) {
+export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const { programId, programName, weekStartDate, status, athleteId, athleteName } = route.params as {
     programId: string;
@@ -134,8 +134,9 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
   }, [programId, athleteId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function saveNote(text: string) {
     if (!noteTarget) return;

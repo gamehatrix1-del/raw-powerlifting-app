@@ -24,7 +24,7 @@ interface Message {
   read_at: string | null;
 }
 
-export default function ChatScreen({ route }: any) {
+export default function ChatScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { session, profile } = useAuth();
@@ -74,8 +74,9 @@ export default function ChatScreen({ route }: any) {
   }, [athleteId, session]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   // Realtime feed for the thread — falls back to nothing dramatic if the
   // channel drops; reopening the screen always re-fetches via load().

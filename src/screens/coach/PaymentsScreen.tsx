@@ -83,8 +83,9 @@ export default function PaymentsScreen({ navigation }: any) {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function handleCreatePlan(input: {
     name: string;

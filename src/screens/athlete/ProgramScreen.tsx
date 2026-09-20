@@ -166,8 +166,9 @@ export default function ProgramScreen({ navigation }: any) {
   }, [session]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   if (loading) {
     return (

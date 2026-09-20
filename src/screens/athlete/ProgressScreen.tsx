@@ -46,7 +46,7 @@ function todayDateKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function ProgressScreen() {
+export default function ProgressScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
@@ -120,8 +120,9 @@ export default function ProgressScreen() {
   }, [session]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function handleLogWeight(weightKg: number) {
     if (!session) return;

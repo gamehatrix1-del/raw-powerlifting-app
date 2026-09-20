@@ -53,8 +53,9 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   function toggleAthlete(id: string) {
     setSelectedAthleteIds((prev) => {

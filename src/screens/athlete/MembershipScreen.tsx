@@ -80,8 +80,9 @@ export default function MembershipScreen({ navigation }: any) {
   }, [session]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function handlePayNow(plan: Plan) {
     if (!session) return;

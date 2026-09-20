@@ -29,7 +29,7 @@ interface LoggedSet {
   coach_note: string | null;
 }
 
-export default function ProgramHistoryDetailScreen({ route }: any) {
+export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const { session } = useAuth();
   const { programId, programName, weekStartDate, status } = route.params as {
@@ -121,8 +121,9 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
   }, [programId, session]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   if (loading) {
     return (

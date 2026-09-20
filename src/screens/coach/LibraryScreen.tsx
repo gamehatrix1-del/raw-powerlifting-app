@@ -28,7 +28,7 @@ const CATEGORY_ICONS: Record<ExerciseCategory, keyof typeof Ionicons.glyphMap> =
   mobility: "body",
 };
 
-export default function LibraryScreen() {
+export default function LibraryScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const alert = useAppAlert();
@@ -57,8 +57,9 @@ export default function LibraryScreen() {
   }, []);
 
   useEffect(() => {
-    loadExercises();
-  }, [loadExercises]);
+    const unsubscribe = navigation.addListener("focus", loadExercises);
+    return unsubscribe;
+  }, [navigation, loadExercises]);
 
   const filteredExercises = useMemo(() => {
     const q = search.trim().toLowerCase();

@@ -56,7 +56,7 @@ function timeOfDay(iso: string): string {
   return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function TransactionDetailScreen({ route }: any) {
+export default function TransactionDetailScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const { profile } = useAuth();
   const { paymentId } = route.params as { paymentId: string };
@@ -97,8 +97,9 @@ export default function TransactionDetailScreen({ route }: any) {
   }, [paymentId]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   if (loading) {
     return (

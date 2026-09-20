@@ -24,7 +24,7 @@ interface TopLift {
   count: number;
 }
 
-export default function ReportingScreen() {
+export default function ReportingScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const alert = useAppAlert();
@@ -101,8 +101,9 @@ export default function ReportingScreen() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function handleExportTransactions() {
     setExporting(true);

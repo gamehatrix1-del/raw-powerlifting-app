@@ -25,7 +25,7 @@ function randomCode(): string {
   return out;
 }
 
-export default function InviteCodesScreen() {
+export default function InviteCodesScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const alert = useAppAlert();
   const { session } = useAuth();
@@ -54,8 +54,9 @@ export default function InviteCodesScreen() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const unsubscribe = navigation.addListener("focus", load);
+    return unsubscribe;
+  }, [navigation, load]);
 
   async function handleGenerate() {
     if (!session) return;
