@@ -10,7 +10,7 @@ import StatTile from "../../components/StatTile";
 import WeekStrip from "../../components/WeekStrip";
 import { useAuth } from "../../context/AuthContext";
 import { useUnreadMessageCount } from "../../hooks/useUnreadMessageCount";
-import { computeStreak, dateKey, thisMonday } from "../../lib/dates";
+import { addInterval, computeStreak, dateKey, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Program, ProgramDay } from "../../types/program";
@@ -35,6 +35,7 @@ export default function HomeScreen({ navigation }: any) {
   const [doneThisWeek, setDoneThisWeek] = useState(0);
   const [streak, setStreak] = useState(0);
   const [weekCompleted, setWeekCompleted] = useState<boolean[]>(Array(7).fill(false));
+  const [renewalBanner, setRenewalBanner] = useState<{ daysUntil: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -99,6 +100,24 @@ export default function HomeScreen({ navigation }: any) {
       return dateKeys.has(dateKey(d.toISOString()));
     });
     setWeekCompleted(week);
+
+    const { data: latestPayment } = await supabase
+      .from("payments")
+      .select("paid_at, plans(billing_interval)")
+      .eq("athlete_id", session.user.id)
+      .eq("status", "paid")
+      .order("paid_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestPayment?.paid_at) {
+      const interval = (latestPayment.plans as any)?.billing_interval ?? "monthly";
+      const renewsAt = addInterval(latestPayment.paid_at, interval);
+      const daysUntil = Math.floor((new Date(renewsAt).getTime() - Date.now()) / 86400000);
+      setRenewalBanner(daysUntil <= 3 ? { daysUntil } : null);
+    } else {
+      setRenewalBanner(null);
+    }
 
     setLoading(false);
   }, [session, todayIndex]);
@@ -180,6 +199,44 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         </AnimatedPressable>
       </View>
+
+      {renewalBanner && (
+        <AnimatedPressable
+          onPress={() => navigation.navigate("Membership")}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: renewalBanner.daysUntil < 0 ? colors.errorMuted : colors.warningMuted,
+            borderRadius: radius.lg,
+            padding: spacing.md + 2,
+            marginBottom: spacing.lg,
+            gap: spacing.sm,
+          }}
+        >
+          <Ionicons
+            name="card"
+            size={18}
+            color={renewalBanner.daysUntil < 0 ? colors.error : colors.warning}
+          />
+          <Text
+            style={[
+              typography.caption,
+              { color: renewalBanner.daysUntil < 0 ? colors.error : colors.warning, flex: 1, fontWeight: "700" },
+            ]}
+          >
+            {renewalBanner.daysUntil < 0
+              ? "Your membership has lapsed — renew to keep training uninterrupted."
+              : renewalBanner.daysUntil === 0
+              ? "Your membership renews today."
+              : `Your membership renews in ${renewalBanner.daysUntil} day${renewalBanner.daysUntil === 1 ? "" : "s"}.`}
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={renewalBanner.daysUntil < 0 ? colors.error : colors.warning}
+          />
+        </AnimatedPressable>
+      )}
 
       <AnimatedPressable
         style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.lg }}

@@ -42,6 +42,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "needs_intake" | "inactive" | "payment_issues">("all");
   const [broadcastVisible, setBroadcastVisible] = useState(false);
 
   const load = useCallback(async () => {
@@ -211,6 +212,16 @@ export default function DashboardScreen({ navigation }: any) {
     return { label: "Paid", tone: "ok" as const };
   }
 
+  function matchesFilter(row: AthleteRow, f: typeof filter) {
+    if (f === "needs_intake") return !row.onboarded;
+    if (f === "inactive") {
+      const label = statusFor(row).label;
+      return label.startsWith("Inactive") || label === "Never logged a workout";
+    }
+    if (f === "payment_issues") return paymentStatusFor(row).tone !== "ok";
+    return true;
+  }
+
   async function handleBroadcast(body: string) {
     const { data, error: broadcastError } = await supabase.functions.invoke("broadcast-message", {
       body: { body },
@@ -223,11 +234,20 @@ export default function DashboardScreen({ navigation }: any) {
     alert("Announcement sent", `Delivered to ${data?.sent ?? 0} athletes.`);
   }
 
+  const filterCounts = useMemo(
+    () => ({
+      all: rows.length,
+      needs_intake: rows.filter((r) => matchesFilter(r, "needs_intake")).length,
+      inactive: rows.filter((r) => matchesFilter(r, "inactive")).length,
+      payment_issues: rows.filter((r) => matchesFilter(r, "payment_issues")).length,
+    }),
+    [rows]
+  );
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = q
-      ? rows.filter((r) => r.profile.full_name.toLowerCase().includes(q))
-      : rows;
+    let filtered = rows.filter((r) => matchesFilter(r, filter));
+    if (q) filtered = filtered.filter((r) => r.profile.full_name.toLowerCase().includes(q));
 
     // Surfaces what actually needs the coach's attention first — worst
     // status/payment tone, then unread messages, then alphabetical.
@@ -238,7 +258,7 @@ export default function DashboardScreen({ navigation }: any) {
       if (a.unreadCount !== b.unreadCount) return b.unreadCount - a.unreadCount;
       return a.profile.full_name.localeCompare(b.profile.full_name);
     });
-  }, [rows, search]);
+  }, [rows, search, filter]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 20, paddingHorizontal: spacing.xxl }}>
@@ -278,6 +298,40 @@ export default function DashboardScreen({ navigation }: any) {
         )}
       </View>
 
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: spacing.lg }}>
+        {(
+          [
+            { key: "all", label: "All" },
+            { key: "needs_intake", label: "Needs intake" },
+            { key: "inactive", label: "Inactive" },
+            { key: "payment_issues", label: "Payment issues" },
+          ] as const
+        ).map((chip) => {
+          const active = filter === chip.key;
+          return (
+            <AnimatedPressable
+              key={chip.key}
+              onPress={() => setFilter(chip.key)}
+              style={{
+                backgroundColor: active ? colors.accent : colors.card,
+                borderRadius: radius.pill,
+                paddingHorizontal: spacing.md,
+                paddingVertical: 7,
+              }}
+            >
+              <Text
+                style={[
+                  typography.micro,
+                  { color: active ? colors.accentText : colors.muted, letterSpacing: 0, fontWeight: "700" },
+                ]}
+              >
+                {chip.label} ({filterCounts[chip.key]})
+              </Text>
+            </AnimatedPressable>
+          );
+        })}
+      </View>
+
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
       ) : error ? (
@@ -291,7 +345,11 @@ export default function DashboardScreen({ navigation }: any) {
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              {rows.length === 0 ? "No athletes have signed up yet." : "No athletes match your search."}
+              {rows.length === 0
+                ? "No athletes have signed up yet."
+                : filter !== "all"
+                ? "No athletes match this filter."
+                : "No athletes match your search."}
             </Text>
           }
           renderItem={({ item }) => {
