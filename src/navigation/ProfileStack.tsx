@@ -1,4 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import AnimatedPressable from "../components/AnimatedPressable";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import ChatScreen from "../screens/ChatScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
@@ -54,7 +56,23 @@ export default function ProfileStack() {
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
-        options={{ title: "Message Coach" }}
+        options={({ navigation }) => ({
+          title: "Message Coach",
+          // Reached from Home via a cross-tab jump into a not-yet-mounted
+          // Profile stack, Chat can end up as that stack's own root route
+          // with nothing to go back to (canGoBack() false) — native-stack
+          // then omits the back button entirely. Always give a working one.
+          headerLeft: () => (
+            <AnimatedPressable
+              onPress={() =>
+                navigation.canGoBack() ? navigation.goBack() : navigation.navigate("ProfileHome")
+              }
+              style={{ padding: 4, marginRight: 8 }}
+            >
+              <Ionicons name="chevron-back" size={26} color={colors.text} />
+            </AnimatedPressable>
+          ),
+        })}
       />
       <Stack.Screen
         name="InviteCodes"

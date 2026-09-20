@@ -402,7 +402,7 @@ export default function WorkoutLogScreen({ route }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: 120 }}

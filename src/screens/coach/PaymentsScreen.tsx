@@ -306,7 +306,7 @@ function PlanModal({
     <Modal visible={visible} animationType="slide" transparent>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="padding"
       >
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
         <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "85%" }}>

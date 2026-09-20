@@ -30,7 +30,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, justifyContent: "center", padding: spacing.xl }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       <View
         style={{

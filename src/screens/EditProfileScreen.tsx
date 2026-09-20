@@ -265,7 +265,7 @@ export default function EditProfileScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={{ padding: spacing.xl, paddingBottom: spacing.xxl * 2 }}
