@@ -74,6 +74,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
     supabase
       .from("exercises")
       .select("*")
+      .eq("is_active", true)
       .order("name", { ascending: true })
       .then(({ data, error }) => {
         if (error) console.error("Failed to load exercises", error);

@@ -8,4 +8,5 @@ export interface Exercise {
   cue_text: string | null;
   created_by: string | null;
   created_at: string;
+  is_active: boolean;
 }

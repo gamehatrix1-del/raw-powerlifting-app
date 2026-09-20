@@ -117,10 +117,19 @@ export default function LibraryScreen({ navigation }: any) {
     loadExercises();
   }
 
-  async function handleDelete(exercise: Exercise) {
-    const { error } = await supabase.from("exercises").delete().eq("id", exercise.id);
+  // A true delete is blocked by the database the moment an exercise has
+  // ever been used in a program, template, or logged workout — which in
+  // practice is nearly always. Deactivating hides it from new program
+  // building (Athlete Library, the coach's exercise picker) while every
+  // existing reference to it — past programs, templates, logged sets —
+  // keeps working exactly as before.
+  async function handleToggleActive(exercise: Exercise) {
+    const { error } = await supabase
+      .from("exercises")
+      .update({ is_active: !exercise.is_active })
+      .eq("id", exercise.id);
     if (error) {
-      alert("Couldn't delete exercise", error.message);
+      alert(exercise.is_active ? "Couldn't deactivate exercise" : "Couldn't reactivate exercise", error.message);
       return;
     }
     setModalVisible(false);
@@ -184,7 +193,7 @@ export default function LibraryScreen({ navigation }: any) {
           }
           renderItem={({ item }) => (
             <AnimatedPressable
-              style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm + 2, flexDirection: "row", alignItems: "center" }}
+              style={{ backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.lg, marginBottom: spacing.sm + 2, flexDirection: "row", alignItems: "center", opacity: item.is_active ? 1 : 0.6 }}
               onPress={() => openEdit(item)}
             >
               <View
@@ -203,10 +212,17 @@ export default function LibraryScreen({ navigation }: any) {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                   <Text style={[typography.subheading, { color: colors.text, flex: 1 }]}>{item.name}</Text>
-                  <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-                    <Text style={[typography.micro, { color: colors.muted, textTransform: "uppercase" }]}>
-                      {item.category}
-                    </Text>
+                  <View style={{ flexDirection: "row", gap: 6 }}>
+                    {!item.is_active && (
+                      <View style={{ backgroundColor: colors.errorMuted, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Text style={[typography.micro, { color: colors.error, textTransform: "uppercase" }]}>Inactive</Text>
+                      </View>
+                    )}
+                    <View style={{ backgroundColor: colors.background, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={[typography.micro, { color: colors.muted, textTransform: "uppercase" }]}>
+                        {item.category}
+                      </Text>
+                    </View>
                   </View>
                 </View>
                 {item.cue_text ? (
@@ -227,7 +243,7 @@ export default function LibraryScreen({ navigation }: any) {
           setEditingExercise(null);
         }}
         onSubmit={handleSave}
-        onDelete={editingExercise ? () => handleDelete(editingExercise) : undefined}
+        onToggleActive={editingExercise ? () => handleToggleActive(editingExercise) : undefined}
       />
     </View>
   );
@@ -238,7 +254,7 @@ function ExerciseModal({
   exercise,
   onClose,
   onSubmit,
-  onDelete,
+  onToggleActive,
 }: {
   visible: boolean;
   exercise: Exercise | null;
@@ -249,7 +265,7 @@ function ExerciseModal({
     cueText: string;
     demoVideoUrl: string;
   }) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onToggleActive?: () => Promise<void>;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
@@ -259,7 +275,7 @@ function ExerciseModal({
   const [cueText, setCueText] = useState("");
   const [demoVideoUrl, setDemoVideoUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -279,23 +295,30 @@ function ExerciseModal({
     }
   }
 
-  function confirmDelete() {
-    if (!onDelete) return;
-    alert("Delete this exercise?", "It will be removed from the library. Programs that already use it keep their existing entries.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          setDeleting(true);
-          try {
-            await onDelete();
-          } finally {
-            setDeleting(false);
-          }
+  function confirmToggleActive() {
+    if (!onToggleActive || !exercise) return;
+    const activating = !exercise.is_active;
+    alert(
+      activating ? "Reactivate this exercise?" : "Deactivate this exercise?",
+      activating
+        ? "It will be available again when building new programs."
+        : "It won't show up when building new programs or in the athlete library, but every existing program, template, and logged set that already uses it keeps working exactly as before.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: activating ? "Reactivate" : "Deactivate",
+          style: activating ? "default" : "destructive",
+          onPress: async () => {
+            setToggling(true);
+            try {
+              await onToggleActive();
+            } finally {
+              setToggling(false);
+            }
+          },
         },
-      },
-    ]);
+      ]
+    );
   }
 
   const inputStyle = {
@@ -321,14 +344,19 @@ function ExerciseModal({
             <Text style={[typography.heading, { color: colors.text }]}>
               {exercise ? "Edit Exercise" : "New Exercise"}
             </Text>
-            {onDelete ? (
-              <AnimatedPressable onPress={confirmDelete} disabled={deleting} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                {deleting ? (
+            {onToggleActive && exercise ? (
+              <AnimatedPressable onPress={confirmToggleActive} disabled={toggling} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                {toggling ? (
                   <ActivityIndicator color={colors.error} size="small" />
+                ) : exercise.is_active ? (
+                  <>
+                    <Ionicons name="eye-off-outline" size={16} color={colors.error} />
+                    <Text style={[typography.caption, { color: colors.error, fontWeight: "700" }]}>Deactivate</Text>
+                  </>
                 ) : (
                   <>
-                    <Ionicons name="trash-outline" size={16} color={colors.error} />
-                    <Text style={[typography.caption, { color: colors.error, fontWeight: "700" }]}>Delete</Text>
+                    <Ionicons name="eye-outline" size={16} color={colors.success} />
+                    <Text style={[typography.caption, { color: colors.success, fontWeight: "700" }]}>Reactivate</Text>
                   </>
                 )}
               </AnimatedPressable>

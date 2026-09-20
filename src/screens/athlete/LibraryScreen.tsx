@@ -47,6 +47,7 @@ export default function LibraryScreen({ navigation }: any) {
     supabase
       .from("exercises")
       .select("*")
+      .eq("is_active", true)
       .order("name", { ascending: true })
       .then(({ data, error: loadError }) => {
         if (loadError) {
