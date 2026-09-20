@@ -186,7 +186,7 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           )}
         </AnimatedPressable>
-        <AnimatedPressable onPress={() => navigation.navigate("Profile")}>
+        <AnimatedPressable onPress={() => navigation.navigate("Profile", { screen: "ProfileHome" })}>
           <View
             style={{
               width: 44, height: 44, borderRadius: 22,

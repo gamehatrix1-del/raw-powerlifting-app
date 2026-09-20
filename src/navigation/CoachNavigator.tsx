@@ -56,7 +56,18 @@ export default function CoachNavigator() {
       <Tab.Screen name="Library" component={LibraryScreen} />
       <Tab.Screen name="Payments" component={CoachPaymentsStack} />
       <Tab.Screen name="Reporting" component={ReportingScreen} />
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        listeners={({ navigation }) => ({
+          // Always land on the menu when the tab icon itself is pressed,
+          // even if a deeper screen in this stack (e.g. Chat, Invite
+          // Codes) was left active from an earlier visit.
+          tabPress: () => {
+            navigation.navigate("Profile", { screen: "ProfileHome" });
+          },
+        })}
+      />
     </Tab.Navigator>
   );
 }

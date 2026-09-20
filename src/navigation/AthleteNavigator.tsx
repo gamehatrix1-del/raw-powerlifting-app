@@ -71,6 +71,16 @@ function AthleteTabs() {
         name="Profile"
         component={ProfileStack}
         options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }}
+        listeners={({ navigation }) => ({
+          // Chat is reached from Home via a cross-tab jump into this
+          // stack, which leaves it as the "current" screen here — so a
+          // later tap on the Profile tab just re-shows Chat instead of
+          // the actual menu. Tapping the tab icon should always land on
+          // the menu.
+          tabPress: () => {
+            navigation.navigate("Profile", { screen: "ProfileHome" });
+          },
+        })}
       />
     </Tab.Navigator>
   );
