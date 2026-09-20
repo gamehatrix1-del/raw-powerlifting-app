@@ -43,6 +43,14 @@ export async function removeFromQueue(localId: string) {
   await saveQueue(queue.filter((q) => q.localId !== localId));
 }
 
+// WorkoutLogScreen triggers a flush from three independent places (mount,
+// a 20s interval, and every app-foreground resume). Without this guard,
+// two of those firing close together — a very real scenario on gym wifi,
+// e.g. the app resuming right as the interval also ticks — would both
+// read the same still-queued entry before either removed it, and both
+// insert it, double-logging the same set.
+let isFlushing = false;
+
 // Retries every queued set-log against Supabase. Entries that still fail
 // (still offline) are left in the queue for the next flush attempt.
 // Returns the ones that made it through, so the caller can reconcile its
@@ -50,26 +58,33 @@ export async function removeFromQueue(localId: string) {
 export async function flushQueue(): Promise<
   { localId: string; serverId: string; programExerciseId: string; setNumber: number }[]
 > {
-  const queue = await getQueue();
-  if (queue.length === 0) return [];
+  if (isFlushing) return [];
+  isFlushing = true;
 
-  const synced: { localId: string; serverId: string; programExerciseId: string; setNumber: number }[] = [];
-  for (const entry of queue) {
-    const { localId, queued_at, ...payload } = entry;
-    const { data, error } = await supabase
-      .from("workout_logs")
-      .insert(payload)
-      .select("id")
-      .single();
-    if (!error && data) {
-      synced.push({
-        localId,
-        serverId: data.id,
-        programExerciseId: entry.program_exercise_id,
-        setNumber: entry.set_number,
-      });
-      await removeFromQueue(localId);
+  try {
+    const queue = await getQueue();
+    if (queue.length === 0) return [];
+
+    const synced: { localId: string; serverId: string; programExerciseId: string; setNumber: number }[] = [];
+    for (const entry of queue) {
+      const { localId, queued_at, ...payload } = entry;
+      const { data, error } = await supabase
+        .from("workout_logs")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (!error && data) {
+        synced.push({
+          localId,
+          serverId: data.id,
+          programExerciseId: entry.program_exercise_id,
+          setNumber: entry.set_number,
+        });
+        await removeFromQueue(localId);
+      }
     }
+    return synced;
+  } finally {
+    isFlushing = false;
   }
-  return synced;
 }

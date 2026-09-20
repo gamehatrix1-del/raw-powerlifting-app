@@ -14,12 +14,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
-import { thisMonday } from "../../lib/dates";
+import { addInterval, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Profile } from "../../types/profile";
 
-const INTERVAL_DAYS: Record<string, number> = { monthly: 30, quarterly: 92, yearly: 365 };
 const INACTIVE_AFTER_DAYS = 5;
 const RENEWAL_GRACE_DAYS = 3;
 
@@ -30,7 +29,7 @@ interface AthleteRow {
   latestProgramWeek: string | null;
   onboarded: boolean;
   lastLoggedAt: string | null;
-  payment: { status: string; paidAt: string | null; intervalDays: number | null } | null;
+  payment: { status: string; paidAt: string | null; billingInterval: "monthly" | "quarterly" | "yearly" | null } | null;
   unreadCount: number;
 }
 
@@ -133,7 +132,7 @@ export default function DashboardScreen({ navigation }: any) {
         paymentByAthlete.set(p.athlete_id, {
           status: p.status,
           paidAt: p.paid_at,
-          intervalDays: INTERVAL_DAYS[p.plans?.billing_interval] ?? null,
+          billingInterval: p.plans?.billing_interval ?? null,
         });
       }
     }
@@ -200,12 +199,17 @@ export default function DashboardScreen({ navigation }: any) {
     if (!row.payment) return { label: "No plan", tone: "warn" as const };
     if (row.payment.status === "failed") return { label: "Payment failed", tone: "critical" as const };
     if (row.payment.status !== "paid") return { label: "Payment pending", tone: "warn" as const };
-    if (row.payment.paidAt && row.payment.intervalDays) {
-      const daysSincePaid = Math.floor((Date.now() - new Date(row.payment.paidAt).getTime()) / 86400000);
-      if (daysSincePaid >= row.payment.intervalDays + RENEWAL_GRACE_DAYS) {
+    if (row.payment.paidAt && row.payment.billingInterval) {
+      // Calendar-accurate renewal date — same addInterval() the athlete's
+      // own Home/Membership screens and the renewal-reminder cron job use,
+      // so the coach never sees a different renewal status than the
+      // athlete does for the same subscription.
+      const renewsAt = addInterval(row.payment.paidAt, row.payment.billingInterval);
+      const daysUntilRenewal = Math.floor((new Date(renewsAt).getTime() - Date.now()) / 86400000);
+      if (daysUntilRenewal <= -RENEWAL_GRACE_DAYS) {
         return { label: "Renewal overdue", tone: "critical" as const };
       }
-      if (daysSincePaid >= row.payment.intervalDays) {
+      if (daysUntilRenewal <= 0) {
         return { label: "Renewal due", tone: "warn" as const };
       }
     }
