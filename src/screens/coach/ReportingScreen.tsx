@@ -223,7 +223,7 @@ export default function ReportingScreen({ navigation }: any) {
             marginRight: spacing.md,
           }}
         >
-          <Text style={{ fontSize: 18 }}>₹</Text>
+          <Text style={{ fontSize: 18, color: colors.accent, fontWeight: "700" }}>₹</Text>
         </View>
         <View>
           <Text style={[typography.caption, { color: colors.muted }]}>This month's revenue</Text>

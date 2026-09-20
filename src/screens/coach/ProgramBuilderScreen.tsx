@@ -112,7 +112,26 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
     });
   }
 
-  async function handleCopyLastWeek() {
+  function hasDraftExercises() {
+    return days.some((d) => d.exercises.length > 0);
+  }
+
+  function handleCopyLastWeek() {
+    if (hasDraftExercises()) {
+      alert(
+        "Replace current draft?",
+        "This will overwrite the exercises you've already added in this builder with last week's program.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Replace", style: "destructive", onPress: () => doCopyLastWeek() },
+        ]
+      );
+      return;
+    }
+    doCopyLastWeek();
+  }
+
+  async function doCopyLastWeek() {
     setCopying(true);
     try {
       const { data: lastProgram, error: programError } = await supabase
@@ -225,8 +244,23 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
     }
   }
 
-  async function handleLoadTemplate(templateId: string) {
+  function handleLoadTemplate(templateId: string) {
     setTemplatePickerVisible(false);
+    if (hasDraftExercises()) {
+      alert(
+        "Replace current draft?",
+        "This will overwrite the exercises you've already added in this builder with the template.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Replace", style: "destructive", onPress: () => doLoadTemplate(templateId) },
+        ]
+      );
+      return;
+    }
+    doLoadTemplate(templateId);
+  }
+
+  async function doLoadTemplate(templateId: string) {
     setCopying(true);
     try {
       const { data: templateDays, error: daysError } = await supabase
