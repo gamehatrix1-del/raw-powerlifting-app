@@ -1,14 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
-import SegmentedControl from "../../components/SegmentedControl";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Program, ProgramDay } from "../../types/program";
+
+function weekdayAbbrev(mondayIso: string, dayNumber: number): string {
+  const d = new Date(mondayIso + "T00:00:00");
+  d.setDate(d.getDate() + (dayNumber - 1));
+  return d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+}
 
 interface DayExercise {
   id: string;
@@ -23,6 +29,7 @@ interface DayExercise {
 
 export default function ProgramScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [program, setProgram] = useState<Program | null>(null);
   const [days, setDays] = useState<ProgramDay[]>([]);
@@ -190,21 +197,85 @@ export default function ProgramScreen({ navigation }: any) {
       style={{
         flex: 1,
         backgroundColor: colors.background,
-        paddingTop: 60,
+        paddingTop: insets.top + 16,
         paddingHorizontal: spacing.xl,
       }}
     >
-      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.lg }]}>
+      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: 2 }]}>
         {program.name}
       </Text>
+      <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.lg }]}>
+        Tap a day below to see what's on it
+      </Text>
 
-      <SegmentedControl
-        options={days.map((d) => ({ label: String(d.day_number), value: d.id }))}
-        value={activeProgramDay.id}
-        onChange={(id) => setActiveDay(days.findIndex((d) => d.id === id))}
-      />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: spacing.sm + 2, paddingBottom: spacing.lg }}
+      >
+        {days.map((d, i) => {
+          const active = i === activeDay;
+          const dayExerciseCount = (exercisesByDay[d.id] ?? []).length;
+          return (
+            <AnimatedPressable
+              key={d.id}
+              onPress={() => setActiveDay(i)}
+              style={{
+                width: 92,
+                backgroundColor: active ? colors.accent : colors.card,
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.sm,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={[
+                  typography.micro,
+                  { color: active ? colors.accentText : colors.faint, letterSpacing: 0.5 },
+                ]}
+              >
+                {weekdayAbbrev(program.week_start_date, d.day_number)}
+              </Text>
+              <View
+                style={{
+                  width: 30, height: 30, borderRadius: 15,
+                  backgroundColor: active ? "rgba(255,255,255,0.22)" : colors.accentMuted,
+                  alignItems: "center", justifyContent: "center",
+                  marginVertical: 6,
+                }}
+              >
+                <Ionicons
+                  name={d.is_rest_day ? "bed" : "barbell"}
+                  size={14}
+                  color={active ? colors.accentText : colors.accent}
+                />
+              </View>
+              <Text
+                style={[
+                  typography.caption,
+                  { color: active ? colors.accentText : colors.text, fontWeight: "700", textAlign: "center" },
+                ]}
+                numberOfLines={1}
+              >
+                {d.is_rest_day ? "Rest" : d.day_label}
+              </Text>
+              {!d.is_rest_day && (
+                <Text
+                  style={[
+                    typography.micro,
+                    { color: active ? colors.accentText : colors.muted, letterSpacing: 0, marginTop: 2, opacity: 0.85 },
+                  ]}
+                >
+                  {dayExerciseCount} {dayExerciseCount === 1 ? "exercise" : "exercises"}
+                </Text>
+              )}
+            </AnimatedPressable>
+          );
+        })}
+      </ScrollView>
 
-      <Text style={[typography.subheading, { color: colors.text, marginTop: spacing.lg, marginBottom: spacing.md }]}>
+      <Text style={[typography.subheading, { color: colors.text, marginBottom: spacing.md }]}>
         {activeProgramDay.day_label}
       </Text>
 

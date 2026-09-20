@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { supabase } from "../lib/supabase";
+import { registerForPushNotificationsAsync } from "../lib/notifications";
 import { AthleteProfile, Profile, UserRole } from "../types/profile";
 
 interface AuthContextValue {
@@ -20,9 +21,11 @@ interface AuthContextValue {
     email: string,
     password: string,
     fullName: string,
-    role: UserRole
+    role: UserRole,
+    inviteCode?: string
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   refreshAthleteProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
@@ -83,6 +86,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       const loadedProfile = profileData as Profile;
       setProfile(loadedProfile);
+      registerForPushNotificationsAsync(session.user.id);
 
       if (loadedProfile.role !== "athlete") {
         setAthleteProfile(null);
@@ -108,6 +112,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       cancelled = true;
     };
+  }, [session]);
+
+  const refreshProfile = useCallback(async () => {
+    if (!session) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
+    if (error) {
+      console.error("Failed to refresh profile", error);
+      return;
+    }
+    setProfile(data as Profile);
   }, [session]);
 
   const refreshAthleteProfile = useCallback(async () => {
@@ -136,12 +154,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     email: string,
     password: string,
     fullName: string,
-    role: UserRole
+    role: UserRole,
+    inviteCode?: string
   ) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, role } },
+      options: { data: { full_name: fullName, role, invite_code: inviteCode } },
     });
     if (error) throw error;
 
@@ -181,6 +200,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         signIn,
         signUp,
         signOut,
+        refreshProfile,
         refreshAthleteProfile,
         resetPassword,
         changePassword,

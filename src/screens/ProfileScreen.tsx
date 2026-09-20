@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAppAlert } from "../components/AppAlert";
 import { useAuth } from "../context/AuthContext";
@@ -45,6 +46,7 @@ function MenuRow({
 
 export default function ProfileScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { profile, signOut } = useAuth();
 
@@ -64,7 +66,7 @@ export default function ProfileScreen({ navigation }: any) {
         flex: 1,
         backgroundColor: colors.background,
         padding: spacing.xl,
-        paddingTop: 72,
+        paddingTop: insets.top + 28,
       }}
     >
       <View
@@ -115,6 +117,13 @@ export default function ProfileScreen({ navigation }: any) {
       </View>
 
       <MenuRow icon="create-outline" label="Edit Profile" onPress={() => navigation.navigate("EditProfile")} />
+      {profile?.role === "athlete" && (
+        <MenuRow icon="chatbubble-outline" label="Message Coach" onPress={() => navigation.navigate("Chat")} />
+      )}
+      {profile?.role === "coach" && (
+        <MenuRow icon="key-outline" label="Invite Codes" onPress={() => navigation.navigate("InviteCodes")} />
+      )}
+      <MenuRow icon="lock-closed-outline" label="Change Password" onPress={() => navigation.navigate("ChangePassword")} />
       <MenuRow icon="shield-checkmark-outline" label="Privacy & Data" onPress={() => navigation.navigate("PrivacyData")} />
 
       <AnimatedPressable

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
@@ -24,6 +25,7 @@ function greeting(): string {
 
 export default function HomeScreen({ navigation }: any) {
   const { colors, typography, spacing, radius, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const { profile, session } = useAuth();
   const [program, setProgram] = useState<Program | null>(null);
   const [todayDay, setTodayDay] = useState<ProgramDay | null>(null);
@@ -126,7 +128,7 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: 60, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl }}
+      contentContainerStyle={{ paddingTop: insets.top + 16, paddingHorizontal: spacing.xl, paddingBottom: spacing.xxl }}
       showsVerticalScrollIndicator={false}
     >
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.xl }}>
@@ -152,7 +154,11 @@ export default function HomeScreen({ navigation }: any) {
 
       <AnimatedPressable
         style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.lg }}
-        onPress={() => navigation.navigate("Program")}
+        onPress={() =>
+          program
+            ? navigation.navigate("Program")
+            : navigation.navigate("Profile", { screen: "Chat" })
+        }
       >
         <View style={{ padding: spacing.xl }}>
           <Svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
@@ -177,7 +183,7 @@ export default function HomeScreen({ navigation }: any) {
                     : todayDay.day_label
                   : program
                   ? "Check your program"
-                  : "Waiting on your coach"}
+                  : "No program yet"}
               </Text>
               <Text style={[typography.caption, { color: colors.muted, marginTop: 4 }]}>
                 {todayDay
@@ -186,7 +192,7 @@ export default function HomeScreen({ navigation }: any) {
                     : "Tap to view & log today's session"
                   : program
                   ? "No session scheduled today"
-                  : "Your coach hasn't assigned a week yet"}
+                  : "Message your coach to get one assigned"}
               </Text>
               <View
                 style={{
@@ -201,9 +207,19 @@ export default function HomeScreen({ navigation }: any) {
                   gap: 6,
                 }}
               >
-                <Ionicons name={todayDay?.is_rest_day ? "bed" : "barbell"} size={14} color={colors.accentText} />
+                <Ionicons
+                  name={todayDay ? (todayDay.is_rest_day ? "bed" : "barbell") : program ? "barbell" : "chatbubble"}
+                  size={14}
+                  color={colors.accentText}
+                />
                 <Text style={[typography.caption, { color: colors.accentText, fontWeight: "700" }]}>
-                  {todayDay ? (todayDay.is_rest_day ? "Rest" : "Start session") : "View program"}
+                  {todayDay
+                    ? todayDay.is_rest_day
+                      ? "Rest"
+                      : "Start session"
+                    : program
+                    ? "View program"
+                    : "Message coach"}
                 </Text>
               </View>
             </View>

@@ -103,7 +103,7 @@ function Section({
 export default function EditProfileScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const alert = useAppAlert();
-  const { session, profile, athleteProfile, refreshAthleteProfile } = useAuth();
+  const { session, profile, athleteProfile, refreshProfile, refreshAthleteProfile } = useAuth();
   const isAthlete = profile?.role === "athlete";
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
@@ -252,6 +252,7 @@ export default function EditProfileScreen({ navigation }: any) {
         await refreshAthleteProfile();
       }
 
+      await refreshProfile();
       alert("Saved", "Your profile has been updated.");
       navigation.goBack();
     } catch (err: any) {

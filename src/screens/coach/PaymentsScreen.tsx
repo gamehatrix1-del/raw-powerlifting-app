@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
@@ -31,6 +32,7 @@ interface TransactionRow {
 
 export default function PaymentsScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
@@ -136,7 +138,7 @@ export default function PaymentsScreen({ navigation }: any) {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: 64, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: insets.top + 20, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
     >
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
         <Text style={[typography.heading, { color: colors.text, fontSize: 20 }]}>Membership Plans</Text>

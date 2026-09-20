@@ -8,7 +8,7 @@
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#111113",
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.rawpowerlifting.app"
     },
     "android": {
@@ -38,6 +38,14 @@
           "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#111113"
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#F0394B"
         }
       ]
     ]

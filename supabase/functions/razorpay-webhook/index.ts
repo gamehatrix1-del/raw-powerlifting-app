@@ -30,20 +30,48 @@ Deno.serve(async (req) => {
       .eq("razorpay_order_id", payment.order_id);
   } else if (event.event === "payment.failed") {
     const payment = event.payload.payment.entity;
-    await supabase
+    const { data: updatedPayment } = await supabase
       .from("payments")
       .update({
         status: "failed",
         razorpay_payment_id: payment.id,
         failure_reason: payment.error_description ?? "Payment failed",
       })
-      .eq("razorpay_order_id", payment.order_id);
+      .eq("razorpay_order_id", payment.order_id)
+      .select("athlete_id")
+      .maybeSingle();
+
+    if (updatedPayment?.athlete_id) {
+      await notifyAthlete(
+        updatedPayment.athlete_id,
+        "Payment failed",
+        payment.error_description || "Your recent payment couldn't be processed. Please try again."
+      );
+    }
   }
 
   return new Response(JSON.stringify({ received: true }), {
     headers: { "Content-Type": "application/json" },
   });
 });
+
+// Server-to-server call to notify-athlete using the service role key, which
+// that function recognizes as a trusted caller (see its own comment) since
+// this webhook has no end-user session to present.
+async function notifyAthlete(athleteId: string, title: string, body: string) {
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-athlete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+      },
+      body: JSON.stringify({ athleteId, title, body, data: { type: "payment_failed" } }),
+    });
+  } catch (err) {
+    console.error("Failed to send payment-failed push", err);
+  }
+}
 
 async function isValidSignature(body: string, signature: string) {
   const secret = Deno.env.get("RAZORPAY_WEBHOOK_SECRET")!;

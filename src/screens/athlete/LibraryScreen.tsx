@@ -4,10 +4,13 @@ import {
   ActivityIndicator,
   FlatList,
   Linking,
+  Modal,
+  ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
 import SegmentedControl from "../../components/SegmentedControl";
@@ -30,11 +33,13 @@ const CATEGORY_ICONS: Record<ExerciseCategory, keyof typeof Ionicons.glyphMap> =
 
 export default function LibraryScreen() {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ExerciseCategory | "all">("all");
+  const [selected, setSelected] = useState<Exercise | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -69,7 +74,7 @@ export default function LibraryScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 20, paddingHorizontal: spacing.xl }}>
       <Text style={[typography.title, { color: colors.text, marginBottom: spacing.lg }]}>
         Exercise Library
       </Text>
@@ -118,14 +123,16 @@ export default function LibraryScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View
+            <AnimatedPressable
               style={{
                 backgroundColor: colors.card,
                 borderRadius: radius.md,
                 padding: spacing.lg,
                 marginBottom: spacing.sm + 2,
                 flexDirection: "row",
+                alignItems: "center",
               }}
+              onPress={() => setSelected(item)}
             >
               <View
                 style={{
@@ -150,24 +157,95 @@ export default function LibraryScreen() {
                   </View>
                 </View>
                 {item.cue_text ? (
-                  <Text style={[typography.caption, { color: colors.muted, marginTop: 6 }]}>{item.cue_text}</Text>
-                ) : null}
-                {item.demo_video_url ? (
-                  <AnimatedPressable
-                    style={{ flexDirection: "row", alignItems: "center", marginTop: spacing.sm, gap: 4 }}
-                    onPress={() => Linking.openURL(item.demo_video_url!)}
-                  >
-                    <Ionicons name="play-circle" size={16} color={colors.accent} />
-                    <Text style={[typography.caption, { color: colors.accent, fontWeight: "700" }]}>
-                      Watch demo
-                    </Text>
-                  </AnimatedPressable>
+                  <Text style={[typography.caption, { color: colors.muted, marginTop: 6 }]} numberOfLines={1}>
+                    {item.cue_text}
+                  </Text>
                 ) : null}
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.faint} style={{ marginLeft: spacing.sm }} />
+            </AnimatedPressable>
           )}
         />
       )}
+
+      <ExerciseDetailModal exercise={selected} onClose={() => setSelected(null)} />
     </View>
+  );
+}
+
+function ExerciseDetailModal({ exercise, onClose }: { exercise: Exercise | null; onClose: () => void }) {
+  const { colors, typography, spacing, radius } = useTheme();
+
+  return (
+    <Modal visible={!!exercise} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "80%" }}>
+          {exercise && (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={{ alignSelf: "center", width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: spacing.lg }} />
+
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.lg }}>
+                <View
+                  style={{
+                    width: 48, height: 48, borderRadius: 24,
+                    backgroundColor: colors.accentMuted,
+                    alignItems: "center", justifyContent: "center",
+                    marginRight: spacing.md,
+                  }}
+                >
+                  <Ionicons name={CATEGORY_ICONS[exercise.category]} size={22} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.title, { color: colors.text, fontSize: 20 }]}>{exercise.name}</Text>
+                  <Text style={[typography.caption, { color: colors.muted, marginTop: 2, textTransform: "capitalize" }]}>
+                    {exercise.category}
+                  </Text>
+                </View>
+              </View>
+
+              {exercise.cue_text ? (
+                <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.md, padding: spacing.md + 2, marginBottom: spacing.lg }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <Ionicons name="bulb-outline" size={14} color={colors.accent} />
+                    <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0.5 }]}>COACHING CUE</Text>
+                  </View>
+                  <Text style={[typography.body, { color: colors.text, lineHeight: 21 }]}>{exercise.cue_text}</Text>
+                </View>
+              ) : (
+                <Text style={[typography.caption, { color: colors.faint, marginBottom: spacing.lg }]}>
+                  No coaching notes added for this exercise yet.
+                </Text>
+              )}
+
+              {exercise.demo_video_url ? (
+                <AnimatedPressable
+                  style={{
+                    backgroundColor: colors.accent,
+                    borderRadius: radius.md,
+                    paddingVertical: spacing.md + 2,
+                    alignItems: "center",
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    gap: spacing.sm,
+                    marginBottom: spacing.md,
+                  }}
+                  onPress={() => Linking.openURL(exercise.demo_video_url!)}
+                >
+                  <Ionicons name="play-circle" size={18} color={colors.accentText} />
+                  <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Watch demo</Text>
+                </AnimatedPressable>
+              ) : null}
+
+              <AnimatedPressable
+                style={{ paddingVertical: spacing.md, alignItems: "center" }}
+                onPress={onClose}
+              >
+                <Text style={[typography.bodyStrong, { color: colors.muted }]}>Close</Text>
+              </AnimatedPressable>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }

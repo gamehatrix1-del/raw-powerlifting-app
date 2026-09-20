@@ -38,12 +38,13 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
 
   const [p, setP] = useState<AthleteProfile | null>(null);
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [latestWeight, setLatestWeight] = useState<{ weightKg: number; loggedAt: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
 
-    const [{ data: profileData }, { data: programsData }] = await Promise.all([
+    const [{ data: profileData }, { data: programsData }, { data: weightData }] = await Promise.all([
       supabase
         .from("athlete_profiles")
         .select("*")
@@ -54,10 +55,18 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
         .select("*")
         .eq("athlete_id", athleteId)
         .order("week_start_date", { ascending: false }),
+      supabase
+        .from("bodyweight_logs")
+        .select("weight_kg, logged_at")
+        .eq("athlete_id", athleteId)
+        .order("logged_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     ]);
 
     setP((profileData as AthleteProfile) ?? null);
     setPrograms((programsData as Program[]) ?? []);
+    setLatestWeight(weightData ? { weightKg: weightData.weight_kg, loggedAt: weightData.logged_at } : null);
     setLoading(false);
   }, [athleteId]);
 
@@ -93,6 +102,16 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
           </Text>
         </View>
         <Text style={[typography.title, { color: colors.text, flex: 1 }]} numberOfLines={1}>{athleteName}</Text>
+        <AnimatedPressable
+          onPress={() => navigation.navigate("Chat", { athleteId, athleteName })}
+          style={{
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: colors.card,
+            alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <Ionicons name="chatbubble-outline" size={19} color={colors.accent} />
+        </AnimatedPressable>
       </View>
 
       <AnimatedPressable
@@ -113,7 +132,16 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
             <Row label="Gender" value={p.gender} />
             <Row label="City" value={p.city} />
             <Row label="Height" value={p.height_cm ? `${p.height_cm} cm` : null} />
-            <Row label="Bodyweight" value={p.bodyweight_kg ? `${p.bodyweight_kg} kg` : null} />
+            <Row
+              label={latestWeight ? `Bodyweight (${formatDisplayDate(latestWeight.loggedAt)})` : "Bodyweight (intake)"}
+              value={
+                latestWeight
+                  ? `${latestWeight.weightKg} kg`
+                  : p.bodyweight_kg
+                  ? `${p.bodyweight_kg} kg`
+                  : null
+              }
+            />
             <Row label="Body Fat" value={p.body_fat_pct ? `${p.body_fat_pct}%` : null} />
             <Row label="Weight Class" value={p.weight_class} />
             <Row label="Occupation" value={p.occupation} />
@@ -198,6 +226,8 @@ export default function AthleteDetailScreen({ route, navigation }: any) {
                 programName: item.name,
                 weekStartDate: item.week_start_date,
                 status: item.status,
+                athleteId,
+                athleteName,
               })
             }
           >

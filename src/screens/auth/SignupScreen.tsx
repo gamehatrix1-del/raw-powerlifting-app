@@ -20,10 +20,12 @@ const HERO_HEIGHT = 240;
 const LOGO_WIDTH = 148;
 const LOGO_HEIGHT = LOGO_WIDTH * (1151 / 1597);
 
-// Self-signup always creates an athlete account. There's a single coach
-// (Rajat); that account is promoted manually with one SQL statement after
-// he signs up — see docs/RAW_App_Build_Guide.md — so no one can grant
-// themselves coach access through the app.
+// Self-signup always creates an athlete account, gated by an invite code
+// the coach generates and shares (see InviteCodesScreen) — this stays a
+// private, capacity-limited roster rather than an open public app. There's
+// a single coach (Rajat); that account is promoted manually with one SQL
+// statement after he signs up — see docs/RAW_App_Build_Guide.md — so no
+// one can grant themselves coach access through the app.
 export default function SignupScreen({ navigation }: any) {
   const { colors, typography, spacing, radius, isDark } = useTheme();
   const alert = useAppAlert();
@@ -31,6 +33,7 @@ export default function SignupScreen({ navigation }: any) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
 
@@ -40,7 +43,7 @@ export default function SignupScreen({ navigation }: any) {
       // No email confirmation step — signing up logs the athlete straight
       // in, and RootNavigator swaps away from this screen once the new
       // session lands.
-      await signUp(email.trim(), password, fullName.trim(), "athlete");
+      await signUp(email.trim(), password, fullName.trim(), "athlete", inviteCode.trim());
     } catch (err: any) {
       alert("Couldn't sign up", err.message ?? "Please try again.");
       setSubmitting(false);
@@ -136,6 +139,13 @@ export default function SignupScreen({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
           />
+          <AppTextInput
+            label="Invite code"
+            placeholder="From your coach"
+            autoCapitalize="characters"
+            value={inviteCode}
+            onChangeText={setInviteCode}
+          />
 
           <AnimatedPressable
             style={{ flexDirection: "row", alignItems: "flex-start", marginTop: spacing.sm, marginBottom: spacing.lg, gap: spacing.sm }}
@@ -179,7 +189,7 @@ export default function SignupScreen({ navigation }: any) {
               opacity: !consentAccepted ? 0.5 : 1,
             }}
             onPress={handleSubmit}
-            disabled={submitting || !fullName || !email || !password || !consentAccepted}
+            disabled={submitting || !fullName || !email || !password || !inviteCode || !consentAccepted}
           >
             {submitting ? (
               <ActivityIndicator color={colors.accentText} />

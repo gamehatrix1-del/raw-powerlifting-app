@@ -64,6 +64,9 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateNameModalVisible, setTemplateNameModalVisible] = useState(false);
+  const [templatePickerVisible, setTemplatePickerVisible] = useState(false);
 
   useEffect(() => {
     supabase
@@ -163,6 +166,108 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
     }
   }
 
+  async function handleSaveAsTemplate(name: string) {
+    if (!session) return;
+    setSavingTemplate(true);
+    try {
+      const { data: template, error: templateError } = await supabase
+        .from("program_templates")
+        .insert({ coach_id: session.user.id, name })
+        .select()
+        .single();
+      if (templateError) throw templateError;
+
+      const daysToSave = days.filter((d) => d.isRestDay || d.exercises.length > 0);
+      const { data: insertedDays, error: daysError } = await supabase
+        .from("program_template_days")
+        .insert(
+          daysToSave.map((d) => ({
+            template_id: template.id,
+            day_number: d.dayNumber,
+            day_label: d.label,
+            is_rest_day: d.isRestDay,
+          }))
+        )
+        .select();
+      if (daysError) throw daysError;
+
+      const exerciseRows = daysToSave.flatMap((d) => {
+        const dayRow = (insertedDays ?? []).find((row: any) => row.day_number === d.dayNumber);
+        if (!dayRow) return [];
+        return d.exercises.map((e, index) => ({
+          template_day_id: dayRow.id,
+          exercise_id: e.exerciseId,
+          order_index: index,
+          sets: Number(e.sets) || 1,
+          reps: e.reps || "-",
+          target_load: e.targetLoad || null,
+          target_rpe: e.targetRpe ? Number(e.targetRpe) : null,
+          tempo_note: e.tempoNote || null,
+        }));
+      });
+
+      if (exerciseRows.length > 0) {
+        const { error: exercisesError } = await supabase
+          .from("program_template_exercises")
+          .insert(exerciseRows);
+        if (exercisesError) throw exercisesError;
+      }
+
+      setTemplateNameModalVisible(false);
+      alert("Template saved", `"${name}" can now be applied to any athlete.`);
+    } catch (err: any) {
+      alert("Couldn't save template", err.message ?? "Please try again.");
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function handleLoadTemplate(templateId: string) {
+    setTemplatePickerVisible(false);
+    setCopying(true);
+    try {
+      const { data: templateDays, error: daysError } = await supabase
+        .from("program_template_days")
+        .select("*")
+        .eq("template_id", templateId)
+        .order("day_number", { ascending: true });
+      if (daysError) throw daysError;
+
+      const { data: templateExercises, error: exercisesError } = await supabase
+        .from("program_template_exercises")
+        .select("*, exercises(name)")
+        .in("template_day_id", (templateDays ?? []).map((d) => d.id))
+        .order("order_index", { ascending: true });
+      if (exercisesError) throw exercisesError;
+
+      const base = emptyDays();
+      for (const d of templateDays ?? []) {
+        const target = base.find((b) => b.dayNumber === d.day_number);
+        if (!target) continue;
+        target.label = d.day_label;
+        target.isRestDay = d.is_rest_day;
+        target.exercises = (templateExercises ?? [])
+          .filter((e: any) => e.template_day_id === d.id)
+          .map((e: any) => ({
+            tempId: `${e.id}-${Math.random()}`,
+            exerciseId: e.exercise_id,
+            exerciseName: e.exercises?.name ?? "Exercise",
+            sets: String(e.sets),
+            reps: e.reps,
+            targetLoad: e.target_load ?? "",
+            targetRpe: e.target_rpe != null ? String(e.target_rpe) : "",
+            tempoNote: e.tempo_note ?? "",
+          }));
+      }
+
+      setDays(base);
+    } catch (err: any) {
+      alert("Couldn't load template", err.message ?? "Please try again.");
+    } finally {
+      setCopying(false);
+    }
+  }
+
   async function handleSave() {
     if (!session) return;
     setSaving(true);
@@ -217,6 +322,19 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
         if (exercisesError) throw exercisesError;
       }
 
+      // Best-effort — a failed push should never block the program save
+      // that already succeeded.
+      supabase.functions
+        .invoke("notify-athlete", {
+          body: {
+            athleteId,
+            title: "New program assigned",
+            body: `${programName} is ready — check out this week's plan.`,
+            data: { type: "program_assigned" },
+          },
+        })
+        .catch((err) => console.error("Failed to send program-assigned push", err));
+
       alert("Program assigned", `${athleteName}'s week is live.`);
       navigation.goBack();
     } catch (err: any) {
@@ -249,7 +367,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
         <DateField label="Week start" value={weekStartDate} onChange={setWeekStartDate} />
 
         <AnimatedPressable
-          style={{ backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center", marginBottom: spacing.xl }}
+          style={{ backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center", marginBottom: spacing.sm + 2 }}
           onPress={handleCopyLastWeek}
           disabled={copying}
         >
@@ -259,6 +377,21 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
             <Text style={[typography.bodyStrong, { color: colors.text }]}>Copy last week</Text>
           )}
         </AnimatedPressable>
+
+        <View style={{ flexDirection: "row", gap: spacing.sm + 2, marginBottom: spacing.xl }}>
+          <AnimatedPressable
+            style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center" }}
+            onPress={() => setTemplatePickerVisible(true)}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.text }]}>Load Template</Text>
+          </AnimatedPressable>
+          <AnimatedPressable
+            style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: "center" }}
+            onPress={() => setTemplateNameModalVisible(true)}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.text }]}>Save as Template</Text>
+          </AnimatedPressable>
+        </View>
 
         <View style={{ marginBottom: spacing.lg }}>
           <SegmentedControl
@@ -360,7 +493,154 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
           setPickerVisible(false);
         }}
       />
+
+      <TemplateNameModal
+        visible={templateNameModalVisible}
+        saving={savingTemplate}
+        onClose={() => setTemplateNameModalVisible(false)}
+        onSave={handleSaveAsTemplate}
+      />
+
+      <TemplatePickerModal
+        visible={templatePickerVisible}
+        onClose={() => setTemplatePickerVisible(false)}
+        onSelect={handleLoadTemplate}
+      />
     </KeyboardAvoidingView>
+  );
+}
+
+function TemplateNameModal({
+  visible,
+  saving,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onSave: (name: string) => void;
+}) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const [name, setName] = useState("");
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl }}>
+            <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Save as Template</Text>
+            <TextInput
+              style={{
+                backgroundColor: colors.background,
+                color: colors.text,
+                borderRadius: radius.md,
+                paddingHorizontal: spacing.lg,
+                paddingVertical: spacing.md,
+                fontSize: 15,
+                marginBottom: spacing.lg,
+              }}
+              placeholder="e.g. Beginner Strength Block"
+              placeholderTextColor={colors.faint}
+              value={name}
+              onChangeText={setName}
+              autoFocus
+            />
+            <View style={{ flexDirection: "row", gap: spacing.md }}>
+              <AnimatedPressable
+                style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
+                onPress={onClose}
+              >
+                <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
+              </AnimatedPressable>
+              <AnimatedPressable
+                style={{ flex: 1, backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", opacity: !name.trim() ? 0.5 : 1 }}
+                onPress={() => onSave(name.trim())}
+                disabled={!name.trim() || saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.accentText} />
+                ) : (
+                  <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Save</Text>
+                )}
+              </AnimatedPressable>
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+interface TemplateSummary {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+function TemplatePickerModal({
+  visible,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSelect: (templateId: string) => void;
+}) {
+  const { colors, typography, spacing, radius } = useTheme();
+  const [templates, setTemplates] = useState<TemplateSummary[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setLoading(true);
+    supabase
+      .from("program_templates")
+      .select("id, name, created_at")
+      .order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error("Failed to load templates", error);
+        setTemplates((data as TemplateSummary[]) ?? []);
+        setLoading(false);
+      });
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "70%" }}>
+          <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Load Template</Text>
+          {loading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : (
+            <FlatList
+              data={templates}
+              keyExtractor={(item) => item.id}
+              style={{ maxHeight: 320 }}
+              ListEmptyComponent={
+                <Text style={[typography.caption, { color: colors.muted, textAlign: "center", marginTop: 20 }]}>
+                  No saved templates yet. Build a week and tap "Save as Template".
+                </Text>
+              }
+              renderItem={({ item }) => (
+                <AnimatedPressable
+                  style={{ paddingVertical: spacing.md + 2, borderBottomWidth: 1, borderBottomColor: colors.background }}
+                  onPress={() => onSelect(item.id)}
+                >
+                  <Text style={[typography.body, { color: colors.text }]}>{item.name}</Text>
+                </AnimatedPressable>
+              )}
+            />
+          )}
+          <AnimatedPressable
+            style={{ backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.md }}
+            onPress={onClose}
+          >
+            <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
+          </AnimatedPressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 

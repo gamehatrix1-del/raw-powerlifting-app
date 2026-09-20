@@ -1,8 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useCallback, useEffect, useState } from "react";
+import { AppState } from "react-native";
 import HomeScreen from "../screens/athlete/HomeScreen";
 import LibraryScreen from "../screens/athlete/LibraryScreen";
 import ProgressScreen from "../screens/athlete/ProgressScreen";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
 import AthleteMembershipStack from "./AthleteMembershipStack";
 import AthleteProgramStack from "./AthleteProgramStack";
 import ProfileStack from "./ProfileStack";
@@ -30,6 +34,32 @@ const OUTLINE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export default function AthleteNavigator() {
   const { colors } = useTheme();
+  const { session } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const checkUnread = useCallback(async () => {
+    if (!session) return;
+    const { count } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("athlete_id", session.user.id)
+      .neq("sender_id", session.user.id)
+      .is("read_at", null);
+    setUnreadCount(count ?? 0);
+  }, [session]);
+
+  useEffect(() => {
+    checkUnread();
+    const interval = setInterval(checkUnread, 30000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") checkUnread();
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [checkUnread]);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -62,7 +92,11 @@ export default function AthleteNavigator() {
         component={AthleteMembershipStack}
         options={{ tabBarLabel: "Plans" }}
       />
-      <Tab.Screen name="Profile" component={ProfileStack} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
+        options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }}
+      />
     </Tab.Navigator>
   );
 }

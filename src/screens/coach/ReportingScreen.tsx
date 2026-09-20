@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ErrorState from "../../components/ErrorState";
 import StatTile from "../../components/StatTile";
 import { addInterval } from "../../lib/dates";
@@ -13,6 +14,7 @@ interface TopLift {
 
 export default function ReportingScreen() {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [totalAthletes, setTotalAthletes] = useState(0);
   const [activeMembers, setActiveMembers] = useState(0);
   const [monthRevenue, setMonthRevenue] = useState(0);
@@ -107,7 +109,7 @@ export default function ReportingScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ paddingTop: 64, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
+      contentContainerStyle={{ paddingTop: insets.top + 20, paddingHorizontal: spacing.xxl, paddingBottom: 40 }}
     >
       <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.xl }]}>Reporting</Text>
 

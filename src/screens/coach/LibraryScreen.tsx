@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
@@ -29,6 +30,7 @@ const CATEGORY_ICONS: Record<ExerciseCategory, keyof typeof Ionicons.glyphMap> =
 
 export default function LibraryScreen() {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { session } = useAuth();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -126,7 +128,7 @@ export default function LibraryScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xxl }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 20, paddingHorizontal: spacing.xxl }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
         <Text style={[typography.title, { color: colors.text }]}>Exercise Library</Text>
         <AnimatedPressable

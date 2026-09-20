@@ -7,6 +7,7 @@ export interface Profile {
   phone: string | null;
   avatar_url: string | null;
   consent_accepted_at: string | null;
+  push_token: string | null;
   created_at: string;
 }
 

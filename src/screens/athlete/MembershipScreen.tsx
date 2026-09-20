@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import RazorpayCheckout from "react-native-razorpay";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
@@ -24,6 +25,7 @@ interface PaymentRow {
 
 export default function MembershipScreen({ navigation }: any) {
   const { colors, typography, spacing, radius, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { session } = useAuth();
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -139,7 +141,7 @@ export default function MembershipScreen({ navigation }: any) {
   const showFailedBanner = mostRecent?.status === "failed";
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 64, paddingHorizontal: spacing.xl }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 20, paddingHorizontal: spacing.xl }}>
       <Text style={[typography.title, { color: colors.text, marginBottom: spacing.lg }]}>Membership</Text>
 
       {showFailedBanner && (

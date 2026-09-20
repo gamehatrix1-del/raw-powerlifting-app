@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTheme } from "../theme/ThemeContext";
 import AthleteDetailScreen from "../screens/coach/AthleteDetailScreen";
+import ChatScreen from "../screens/ChatScreen";
 import DashboardScreen from "../screens/coach/DashboardScreen";
 import ProgramBuilderScreen from "../screens/coach/ProgramBuilderScreen";
 import ProgramHistoryDetailScreen from "../screens/coach/ProgramHistoryDetailScreen";
@@ -36,6 +37,11 @@ export default function CoachDashboardStack() {
         name="ProgramHistoryDetail"
         component={ProgramHistoryDetailScreen}
         options={({ route }: any) => ({ title: route.params?.programName ?? "Program" })}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }: any) => ({ title: route.params?.athleteName ?? "Chat" })}
       />
     </Stack.Navigator>
   );

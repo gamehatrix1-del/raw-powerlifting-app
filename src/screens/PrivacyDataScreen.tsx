@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, Share, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAppAlert } from "../components/AppAlert";
 import { useAuth } from "../context/AuthContext";
@@ -97,10 +99,23 @@ export default function PrivacyDataScreen({ navigation }: any) {
         payments: payments ?? [],
       };
 
-      await Share.share({
-        title: "RPA data export",
-        message: JSON.stringify(bundle, null, 2),
-      });
+      // A real downloadable file (like Google Takeout / Instagram's "Download
+      // your information"), not just a text blob thrown at the share sheet.
+      const fileName = `rpa-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      const file = new File(Paths.cache, fileName);
+      if (file.exists) file.delete();
+      file.create();
+      file.write(JSON.stringify(bundle, null, 2));
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: "application/json",
+          dialogTitle: "Save your RPA data export",
+          UTI: "public.json",
+        });
+      } else {
+        alert("Export ready", `Saved to ${file.uri}`);
+      }
     } catch (err: any) {
       alert("Couldn't export your data", err.message ?? "Please try again.");
     } finally {
@@ -171,14 +186,6 @@ export default function PrivacyDataScreen({ navigation }: any) {
         onPress={confirmDelete}
         destructive
         busy={deleting}
-      />
-
-      <SectionLabel>ACCOUNT</SectionLabel>
-      <Row
-        icon="lock-closed-outline"
-        title="Change password"
-        subtitle="Update the password you log in with"
-        onPress={() => navigation.navigate("ChangePassword")}
       />
     </ScrollView>
   );
