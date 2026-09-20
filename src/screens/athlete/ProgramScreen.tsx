@@ -63,6 +63,7 @@ export default function ProgramScreen({ navigation }: any) {
       .select("*")
       .eq("athlete_id", session.user.id)
       .order("week_start_date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 

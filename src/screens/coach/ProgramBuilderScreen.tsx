@@ -272,8 +272,38 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
 
   async function handleSave() {
     if (!session) return;
+
+    const { data: existing } = await supabase
+      .from("programs")
+      .select("id, name")
+      .eq("athlete_id", athleteId)
+      .eq("week_start_date", weekStartDate)
+      .maybeSingle();
+
+    if (existing) {
+      alert(
+        "Already has a program this week",
+        `${athleteName} already has "${existing.name}" for this week. Replace it with this one? Any sets they've already logged stay on their history — only the program itself is replaced.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Replace", style: "destructive", onPress: () => doSave(existing.id) },
+        ]
+      );
+      return;
+    }
+
+    doSave(null);
+  }
+
+  async function doSave(replaceProgramId: string | null) {
+    if (!session) return;
     setSaving(true);
     try {
+      if (replaceProgramId) {
+        const { error: deleteError } = await supabase.from("programs").delete().eq("id", replaceProgramId);
+        if (deleteError) throw deleteError;
+      }
+
       const { data: program, error: programError } = await supabase
         .from("programs")
         .insert({

@@ -86,10 +86,27 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
 
       const athleteIds = [...selectedAthleteIds];
       let succeeded = 0;
+      let replaced = 0;
       let failed = 0;
 
       for (const athleteId of athleteIds) {
         try {
+          // Bulk-assign is an explicit, already-confirmed action — replace
+          // an existing program for that week per athlete rather than
+          // failing on the unique (athlete, week) constraint.
+          const { data: existing } = await supabase
+            .from("programs")
+            .select("id")
+            .eq("athlete_id", athleteId)
+            .eq("week_start_date", weekStartDate)
+            .maybeSingle();
+
+          if (existing) {
+            const { error: deleteError } = await supabase.from("programs").delete().eq("id", existing.id);
+            if (deleteError) throw deleteError;
+            replaced++;
+          }
+
           const { data: program, error: programError } = await supabase
             .from("programs")
             .insert({
@@ -156,11 +173,12 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
         }
       }
 
+      const replacedNote = replaced > 0 ? ` (${replaced} already had a program for this week, now replaced)` : "";
       alert(
         "Bulk assign complete",
         failed > 0
-          ? `Assigned to ${succeeded} athlete${succeeded === 1 ? "" : "s"}. ${failed} failed — please retry those individually.`
-          : `Assigned "${selectedTemplate.name}" to ${succeeded} athlete${succeeded === 1 ? "" : "s"}.`,
+          ? `Assigned to ${succeeded} athlete${succeeded === 1 ? "" : "s"}${replacedNote}. ${failed} failed — please retry those individually.`
+          : `Assigned "${selectedTemplate.name}" to ${succeeded} athlete${succeeded === 1 ? "" : "s"}${replacedNote}.`,
         [{ text: "OK", onPress: () => navigation.goBack() }]
       );
     } catch (err: any) {
@@ -230,6 +248,9 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
       </AnimatedPressable>
 
       <DateField label="Week start" value={weekStartDate} onChange={setWeekStartDate} />
+      <Text style={[typography.micro, { color: colors.faint, letterSpacing: 0, marginTop: -spacing.sm }]}>
+        Replaces any program an athlete already has for this week — their logged sets stay on their history.
+      </Text>
 
       <Text style={[typography.subheading, { color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm + 2 }]}>
         Select athletes ({selectedAthleteIds.size} selected)

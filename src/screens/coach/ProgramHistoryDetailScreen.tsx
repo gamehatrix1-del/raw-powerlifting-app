@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
 import SegmentedControl from "../../components/SegmentedControl";
 import { formatDisplayDate } from "../../lib/dates";
@@ -43,6 +44,7 @@ interface LoggedSet {
 
 export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const alert = useAppAlert();
   const { programId, programName, weekStartDate, status, athleteId, athleteName } = route.params as {
     programId: string;
     programName: string;
@@ -58,6 +60,7 @@ export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [noteTarget, setNoteTarget] = useState<{ set: LoggedSet; exerciseName: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -138,6 +141,29 @@ export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
     return unsubscribe;
   }, [navigation, load]);
 
+  function confirmDeleteProgram() {
+    alert(
+      "Delete this program?",
+      `This removes "${programName}" entirely — use this if it was assigned by mistake. Any sets ${athleteName ?? "the athlete"} already logged stay on their history, just detached from this program.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: handleDeleteProgram },
+      ]
+    );
+  }
+
+  async function handleDeleteProgram() {
+    setDeleting(true);
+    try {
+      const { error: deleteError } = await supabase.from("programs").delete().eq("id", programId);
+      if (deleteError) throw deleteError;
+      navigation.goBack();
+    } catch (err: any) {
+      alert("Couldn't delete program", err.message ?? "Please try again.");
+      setDeleting(false);
+    }
+  }
+
   async function saveNote(text: string) {
     if (!noteTarget) return;
     const trimmed = text.trim();
@@ -190,7 +216,20 @@ export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 20, paddingHorizontal: spacing.xl }}>
-      <Text style={[typography.title, { color: colors.text }]}>{programName}</Text>
+      <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+        <Text style={[typography.title, { color: colors.text, flex: 1 }]}>{programName}</Text>
+        <AnimatedPressable
+          onPress={confirmDeleteProgram}
+          disabled={deleting}
+          style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
+        >
+          {deleting ? (
+            <ActivityIndicator size="small" color={colors.error} />
+          ) : (
+            <Ionicons name="trash-outline" size={16} color={colors.error} />
+          )}
+        </AnimatedPressable>
+      </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: 4, marginBottom: spacing.lg }}>
         <Text style={[typography.caption, { color: colors.muted }]}>
           Week of {formatDisplayDate(weekStartDate)}
