@@ -785,7 +785,7 @@ function ExercisePickerModal({
                 )}
               />
               <AnimatedPressable
-                style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.sm + 2 }}
+                style={{ backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center", marginTop: spacing.sm + 2 }}
                 onPress={handleClose}
               >
                 <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
