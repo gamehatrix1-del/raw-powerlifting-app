@@ -174,10 +174,12 @@ export default function ProgressScreen() {
     >
       <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: spacing.lg }]}>Progress</Text>
 
-      <View style={{ flexDirection: "row", gap: spacing.sm + 2, marginBottom: spacing.xl }}>
-        <StatTile icon="calculator" value={total ? `${total}kg` : "—"} label="Est. total" tone="accent" />
-        <StatTile icon="trending-up" value={String(LIFTS.filter((l) => (series[l.key]?.length ?? 0) > 0).length)} label="Lifts tracked" tone="success" />
-      </View>
+      {total > 0 && (
+        <View style={{ flexDirection: "row", gap: spacing.sm + 2, marginBottom: spacing.xl }}>
+          <StatTile icon="calculator" value={`${total}kg`} label="Est. total" tone="accent" />
+          <StatTile icon="trending-up" value={String(LIFTS.filter((l) => (series[l.key]?.length ?? 0) > 0).length)} label="Lifts tracked" tone="success" />
+        </View>
+      )}
 
       <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md + 2 }}>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2 }}>
@@ -214,7 +216,18 @@ export default function ProgressScreen() {
         )}
       </View>
 
-      {LIFTS.map((lift) => {
+      {total === 0 ? (
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.xxl, alignItems: "center" }}>
+          <Ionicons name="trending-up-outline" size={26} color={colors.faint} style={{ marginBottom: spacing.sm }} />
+          <Text style={[typography.bodyStrong, { color: colors.text, marginBottom: 4, textAlign: "center" }]}>
+            No lift trends yet
+          </Text>
+          <Text style={[typography.caption, { color: colors.muted, textAlign: "center" }]}>
+            Log a squat, bench, or deadlift set on your Program to start tracking your estimated 1RM here.
+          </Text>
+        </View>
+      ) : (
+        LIFTS.map((lift) => {
         const points = series[lift.key] ?? [];
         const latest = points[points.length - 1];
         const isPr =
@@ -265,7 +278,8 @@ export default function ProgressScreen() {
             )}
           </View>
         );
-      })}
+      })
+      )}
 
       <LogWeightModal
         visible={logModalVisible}
