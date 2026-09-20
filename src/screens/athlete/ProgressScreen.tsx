@@ -223,7 +223,8 @@ export default function ProgressScreen() {
             No lift trends yet
           </Text>
           <Text style={[typography.caption, { color: colors.muted, textAlign: "center" }]}>
-            Log a squat, bench, or deadlift set on your Program to start tracking your estimated 1RM here.
+            Estimated 1RM trends for squat, bench, and deadlift will show up here once you've logged sets for
+            those lifts.
           </Text>
         </View>
       ) : (
