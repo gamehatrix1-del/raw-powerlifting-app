@@ -202,7 +202,7 @@ export default function HomeScreen({ navigation }: any) {
 
       {renewalBanner && (
         <AnimatedPressable
-          onPress={() => navigation.navigate("Membership")}
+          onPress={() => navigation.navigate("Membership", { screen: "MembershipHome" })}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -242,7 +242,7 @@ export default function HomeScreen({ navigation }: any) {
         style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.lg }}
         onPress={() =>
           program
-            ? navigation.navigate("Program")
+            ? navigation.navigate("Program", { screen: "ProgramHome" })
             : navigation.navigate("Profile", { screen: "Chat" })
         }
       >
