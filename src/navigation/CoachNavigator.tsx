@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CoachDashboardStack from "./CoachDashboardStack";
 import CoachPaymentsStack from "./CoachPaymentsStack";
 import LibraryScreen from "../screens/coach/LibraryScreen";
@@ -27,6 +28,7 @@ const OUTLINE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export default function CoachNavigator() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -36,8 +38,8 @@ export default function CoachNavigator() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom + 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },

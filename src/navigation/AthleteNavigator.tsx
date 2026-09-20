@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HomeScreen from "../screens/athlete/HomeScreen";
 import LibraryScreen from "../screens/athlete/LibraryScreen";
 import ProgressScreen from "../screens/athlete/ProgressScreen";
@@ -31,6 +32,7 @@ const OUTLINE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 function AthleteTabs() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const unreadCount = useUnreadMessageCount();
 
   return (
@@ -42,8 +44,8 @@ function AthleteTabs() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom + 10,
           paddingTop: 8,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
