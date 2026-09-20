@@ -268,6 +268,7 @@ function PlanModal({
   }) => Promise<void>;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [priceInr, setPriceInr] = useState("");
@@ -308,7 +309,7 @@ function PlanModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "85%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "85%" }}>
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>New Plan</Text>
 

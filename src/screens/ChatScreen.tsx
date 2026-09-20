@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -25,6 +26,7 @@ interface Message {
 
 export default function ChatScreen({ route }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const { session, profile } = useAuth();
   const isCoach = profile?.role === "coach";
   const params = (route.params ?? {}) as { athleteId?: string; athleteName?: string };
@@ -156,9 +158,25 @@ export default function ChatScreen({ route }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 6,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+          backgroundColor: colors.cardAlt,
+        }}
+      >
+        <Ionicons name="information-circle-outline" size={13} color={colors.faint} />
+        <Text style={[typography.micro, { color: colors.faint, letterSpacing: 0 }]}>
+          Messages are kept for 7 days, then automatically deleted.
+        </Text>
+      </View>
+
       {loading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={colors.accent} />
@@ -214,7 +232,9 @@ export default function ChatScreen({ route }: any) {
           flexDirection: "row",
           alignItems: "center",
           gap: spacing.sm,
-          padding: spacing.md,
+          paddingHorizontal: spacing.md,
+          paddingTop: spacing.md,
+          paddingBottom: insets.bottom + spacing.md,
           borderTopWidth: 1,
           borderTopColor: colors.card,
         }}

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
-import { thisMonday } from "../../lib/dates";
+import { formatDisplayDate, thisMonday, todayKey } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Program, ProgramDay } from "../../types/program";
@@ -14,6 +14,18 @@ function weekdayAbbrev(mondayIso: string, dayNumber: number): string {
   const d = new Date(mondayIso + "T00:00:00");
   d.setDate(d.getDate() + (dayNumber - 1));
   return d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+}
+
+function dateForDay(mondayIso: string, dayNumber: number): string {
+  const d = new Date(mondayIso + "T00:00:00");
+  d.setDate(d.getDate() + (dayNumber - 1));
+  return d.toISOString().slice(0, 10);
+}
+
+function weekRangeLabel(mondayIso: string): string {
+  const end = new Date(mondayIso + "T00:00:00");
+  end.setDate(end.getDate() + 6);
+  return `${formatDisplayDate(mondayIso)} – ${formatDisplayDate(end.toISOString().slice(0, 10))}`;
 }
 
 interface DayExercise {
@@ -37,6 +49,7 @@ export default function ProgramScreen({ navigation }: any) {
     Record<string, DayExercise[]>
   >({});
   const [activeDay, setActiveDay] = useState(0);
+  const [loggedCountByDay, setLoggedCountByDay] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -96,6 +109,7 @@ export default function ProgramScreen({ navigation }: any) {
         console.error("Failed to load program exercises", exercisesError);
       } else {
         const grouped: Record<string, DayExercise[]> = {};
+        const dayByExerciseId = new Map<string, string>();
         for (const row of programExercises ?? []) {
           const list = grouped[row.program_day_id] ?? [];
           list.push({
@@ -109,8 +123,35 @@ export default function ProgramScreen({ navigation }: any) {
             cue_text: row.exercises?.cue_text ?? null,
           });
           grouped[row.program_day_id] = list;
+          dayByExerciseId.set(row.id, row.program_day_id);
         }
         setExercisesByDay(grouped);
+
+        // Which days already have logged sets, so the day strip can show
+        // progress at a glance instead of requiring a tap into each day.
+        const exerciseIds = [...dayByExerciseId.keys()];
+        if (exerciseIds.length > 0) {
+          const { data: logs, error: logsError } = await supabase
+            .from("workout_logs")
+            .select("program_exercise_id")
+            .eq("athlete_id", session.user.id)
+            .in("program_exercise_id", exerciseIds);
+
+          if (logsError) {
+            console.error("Failed to load workout logs for progress", logsError);
+          } else {
+            const loggedExerciseIds = new Set((logs ?? []).map((l) => l.program_exercise_id));
+            const counts: Record<string, number> = {};
+            for (const exId of loggedExerciseIds) {
+              const dayId = dayByExerciseId.get(exId);
+              if (!dayId) continue;
+              counts[dayId] = (counts[dayId] ?? 0) + 1;
+            }
+            setLoggedCountByDay(counts);
+          }
+        } else {
+          setLoggedCountByDay({});
+        }
       }
     }
 
@@ -201,12 +242,22 @@ export default function ProgramScreen({ navigation }: any) {
         paddingHorizontal: spacing.xl,
       }}
     >
-      <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: 2 }]}>
-        {program.name}
-      </Text>
-      <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.lg }]}>
-        Tap a day below to see what's on it
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: spacing.lg }}>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.display, { color: colors.text, fontSize: 26, marginBottom: 2 }]}>
+            {program.name}
+          </Text>
+          <Text style={[typography.caption, { color: colors.muted }]}>
+            Week of {weekRangeLabel(program.week_start_date)}
+          </Text>
+        </View>
+        <AnimatedPressable
+          onPress={() => navigation.navigate("ProgramHistory")}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
+        >
+          <Ionicons name="time-outline" size={18} color={colors.accent} />
+        </AnimatedPressable>
+      </View>
 
       <ScrollView
         horizontal
@@ -215,7 +266,11 @@ export default function ProgramScreen({ navigation }: any) {
       >
         {days.map((d, i) => {
           const active = i === activeDay;
+          const isToday = dateForDay(program.week_start_date, d.day_number) === todayKey();
           const dayExerciseCount = (exercisesByDay[d.id] ?? []).length;
+          const loggedCount = loggedCountByDay[d.id] ?? 0;
+          const isDone = !d.is_rest_day && dayExerciseCount > 0 && loggedCount >= dayExerciseCount;
+          const isPartial = !d.is_rest_day && loggedCount > 0 && !isDone;
           return (
             <AnimatedPressable
               key={d.id}
@@ -227,15 +282,29 @@ export default function ProgramScreen({ navigation }: any) {
                 paddingVertical: spacing.md,
                 paddingHorizontal: spacing.sm,
                 alignItems: "center",
+                borderWidth: isToday && !active ? 1.5 : 0,
+                borderColor: colors.accent,
               }}
             >
+              {isDone && (
+                <View
+                  style={{
+                    position: "absolute", top: 6, right: 6,
+                    width: 18, height: 18, borderRadius: 9,
+                    backgroundColor: active ? colors.accentText : colors.success,
+                    alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <Ionicons name="checkmark" size={12} color={active ? colors.accent : colors.card} />
+                </View>
+              )}
               <Text
                 style={[
                   typography.micro,
                   { color: active ? colors.accentText : colors.faint, letterSpacing: 0.5 },
                 ]}
               >
-                {weekdayAbbrev(program.week_start_date, d.day_number)}
+                {isToday ? "TODAY" : weekdayAbbrev(program.week_start_date, d.day_number)}
               </Text>
               <View
                 style={{
@@ -264,10 +333,15 @@ export default function ProgramScreen({ navigation }: any) {
                 <Text
                   style={[
                     typography.micro,
-                    { color: active ? colors.accentText : colors.muted, letterSpacing: 0, marginTop: 2, opacity: 0.85 },
+                    {
+                      color: active ? colors.accentText : isPartial ? colors.warning : colors.muted,
+                      letterSpacing: 0,
+                      marginTop: 2,
+                      opacity: active ? 0.85 : 1,
+                    },
                   ]}
                 >
-                  {dayExerciseCount} {dayExerciseCount === 1 ? "exercise" : "exercises"}
+                  {loggedCount}/{dayExerciseCount} logged
                 </Text>
               )}
             </AnimatedPressable>
@@ -384,9 +458,17 @@ export default function ProgramScreen({ navigation }: any) {
                 })
               }
             >
-              <Ionicons name="play" size={16} color={colors.accentText} />
+              <Ionicons
+                name={(loggedCountByDay[activeProgramDay.id] ?? 0) > 0 ? "checkmark-done" : "play"}
+                size={16}
+                color={colors.accentText}
+              />
               <Text style={[typography.bodyStrong, { color: colors.accentText, fontSize: 16 }]}>
-                Log this workout
+                {(loggedCountByDay[activeProgramDay.id] ?? 0) >= activeExercises.length
+                  ? "Review this workout"
+                  : (loggedCountByDay[activeProgramDay.id] ?? 0) > 0
+                  ? "Continue this workout"
+                  : "Log this workout"}
               </Text>
             </AnimatedPressable>
           </>

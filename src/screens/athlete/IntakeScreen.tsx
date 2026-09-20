@@ -317,7 +317,7 @@ export default function IntakeScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top + 20, paddingHorizontal: spacing.xxl }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 24}
     >
       <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.card, overflow: "hidden" }}>
@@ -523,7 +523,7 @@ export default function IntakeScreen() {
         )}
       </ScrollView>
 
-      <View style={{ flexDirection: "row", gap: spacing.md, paddingVertical: spacing.xl }}>
+      <View style={{ flexDirection: "row", gap: spacing.md, paddingTop: spacing.xl, paddingBottom: insets.bottom + spacing.xl }}>
         {step > 0 && (
           <AnimatedPressable
             style={{ flex: 1, backgroundColor: colors.card, borderRadius: radius.md, paddingVertical: 14, alignItems: "center" }}

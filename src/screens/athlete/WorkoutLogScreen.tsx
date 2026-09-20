@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
@@ -54,6 +55,7 @@ function startOfToday(): string {
 
 export default function WorkoutLogScreen({ route }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { programDayId, dayLabel } = route.params as {
     programDayId: string;
@@ -400,7 +402,7 @@ export default function WorkoutLogScreen({ route }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: 120 }}
@@ -638,7 +640,7 @@ export default function WorkoutLogScreen({ route }: any) {
             right: 0,
             backgroundColor: colors.card,
             paddingTop: spacing.md,
-            paddingBottom: spacing.lg,
+            paddingBottom: insets.bottom + spacing.lg,
             paddingHorizontal: spacing.xl,
             borderTopLeftRadius: radius.xl,
             borderTopRightRadius: radius.xl,

@@ -289,6 +289,7 @@ function LogWeightModal({
   onSave: (weightKg: number) => Promise<void>;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState(initialValue);
   const [saving, setSaving] = useState(false);
 
@@ -313,7 +314,7 @@ function LogWeightModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl }}>
             <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Today's Weight</Text>
             <TextInput
               style={{

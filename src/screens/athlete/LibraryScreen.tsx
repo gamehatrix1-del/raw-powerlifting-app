@@ -175,11 +175,12 @@ export default function LibraryScreen() {
 
 function ExerciseDetailModal({ exercise, onClose }: { exercise: Exercise | null; onClose: () => void }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={!!exercise} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "80%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "80%" }}>
           {exercise && (
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={{ alignSelf: "center", width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: spacing.lg }} />

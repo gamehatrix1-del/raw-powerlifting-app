@@ -1,4 +1,6 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import ProgramHistoryDetailScreen from "../screens/athlete/ProgramHistoryDetailScreen";
+import ProgramHistoryListScreen from "../screens/athlete/ProgramHistoryListScreen";
 import ProgramScreen from "../screens/athlete/ProgramScreen";
 import WorkoutLogScreen from "../screens/athlete/WorkoutLogScreen";
 import { useTheme } from "../theme/ThemeContext";
@@ -24,6 +26,16 @@ export default function AthleteProgramStack() {
         name="WorkoutLog"
         component={WorkoutLogScreen}
         options={({ route }: any) => ({ title: route.params?.dayLabel ?? "Workout" })}
+      />
+      <Stack.Screen
+        name="ProgramHistory"
+        component={ProgramHistoryListScreen}
+        options={{ title: "Past Weeks" }}
+      />
+      <Stack.Screen
+        name="ProgramHistoryDetail"
+        component={ProgramHistoryDetailScreen}
+        options={({ route }: any) => ({ title: route.params?.programName ?? "Program" })}
       />
     </Stack.Navigator>
   );

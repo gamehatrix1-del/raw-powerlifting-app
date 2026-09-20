@@ -251,6 +251,7 @@ function ExerciseModal({
   onDelete?: () => Promise<void>;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ExerciseCategory>("strength");
@@ -313,7 +314,7 @@ function ExerciseModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "85%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "85%" }}>
         <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.lg }}>
             <Text style={[typography.heading, { color: colors.text }]}>

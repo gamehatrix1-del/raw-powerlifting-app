@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import DateField from "../../components/DateField";
@@ -49,6 +50,7 @@ function emptyDays(): DraftDay[] {
 
 export default function ProgramBuilderScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { athleteId, athleteName } = route.params as {
     athleteId: string;
@@ -347,7 +349,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxl }}
@@ -471,7 +473,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
           paddingVertical: spacing.lg,
           alignItems: "center",
           marginHorizontal: spacing.xxl,
-          marginBottom: spacing.xxl,
+          marginBottom: insets.bottom + spacing.xl,
           opacity: saving ? 0.6 : 1,
         }}
         onPress={handleSave}
@@ -522,13 +524,14 @@ function TemplateNameModal({
   onSave: (name: string) => void;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState("");
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl }}>
             <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Save as Template</Text>
             <TextInput
               style={{
@@ -588,6 +591,7 @@ function TemplatePickerModal({
   onSelect: (templateId: string) => void;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -608,7 +612,7 @@ function TemplatePickerModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "70%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "70%" }}>
           <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Load Template</Text>
           {loading ? (
             <ActivityIndicator color={colors.accent} />
@@ -656,6 +660,7 @@ function ExercisePickerModal({
   onAdd: (draft: DraftExercise) => void;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<Exercise | null>(null);
   const [search, setSearch] = useState("");
   const [sets, setSets] = useState("3");
@@ -719,7 +724,7 @@ function ExercisePickerModal({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl, maxHeight: "85%" }}>
+        <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl, maxHeight: "85%" }}>
           {!selected ? (
             <>
               <Text style={[typography.heading, { color: colors.text, marginBottom: spacing.lg }]}>Pick an exercise</Text>

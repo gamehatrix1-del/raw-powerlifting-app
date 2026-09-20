@@ -163,6 +163,18 @@ export default function DashboardScreen({ navigation }: any) {
     return unsubscribe;
   }, [navigation, load]);
 
+  // Live unread badges/sorting — a coach shouldn't have to leave and
+  // return to this screen to see that a message just arrived.
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard-messages")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => load())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
+
   function statusFor(row: AthleteRow) {
     if (!row.onboarded) {
       return { label: "Needs intake", tone: "critical" as const };
@@ -354,6 +366,7 @@ function BroadcastModal({
   onSend: (body: string) => Promise<void>;
 }) {
   const { colors, typography, spacing, radius } = useTheme();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -371,7 +384,7 @@ function BroadcastModal({
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.xxl }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl }}>
             <Text style={[typography.heading, { color: colors.text, marginBottom: 4 }]}>Send Announcement</Text>
             <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.lg }]}>
               Goes to all {athleteCount} athletes' chat threads and their phones.

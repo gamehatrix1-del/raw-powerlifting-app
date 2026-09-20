@@ -9,6 +9,7 @@ import ProgressRing from "../../components/ProgressRing";
 import StatTile from "../../components/StatTile";
 import WeekStrip from "../../components/WeekStrip";
 import { useAuth } from "../../context/AuthContext";
+import { useUnreadMessageCount } from "../../hooks/useUnreadMessageCount";
 import { computeStreak, dateKey, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
@@ -27,6 +28,7 @@ export default function HomeScreen({ navigation }: any) {
   const { colors, typography, spacing, radius, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { profile, session } = useAuth();
+  const unreadCount = useUnreadMessageCount();
   const [program, setProgram] = useState<Program | null>(null);
   const [todayDay, setTodayDay] = useState<ProgramDay | null>(null);
   const [plannedThisWeek, setPlannedThisWeek] = useState(0);
@@ -138,6 +140,33 @@ export default function HomeScreen({ navigation }: any) {
             {profile?.full_name?.split(" ")[0] ?? "Athlete"}
           </Text>
         </View>
+        <AnimatedPressable
+          onPress={() => navigation.navigate("Profile", { screen: "Chat" })}
+          style={{
+            width: 44, height: 44, borderRadius: 22,
+            backgroundColor: colors.card,
+            alignItems: "center", justifyContent: "center",
+            marginRight: spacing.md,
+          }}
+        >
+          <Ionicons name="chatbubble-outline" size={19} color={colors.accent} />
+          {unreadCount > 0 && (
+            <View
+              style={{
+                position: "absolute", top: -2, right: -2,
+                minWidth: 18, height: 18, borderRadius: 9,
+                paddingHorizontal: 4,
+                backgroundColor: colors.error,
+                alignItems: "center", justifyContent: "center",
+                borderWidth: 2, borderColor: colors.background,
+              }}
+            >
+              <Text style={[typography.micro, { color: "#FFFFFF", fontSize: 10, letterSpacing: 0 }]}>
+                {unreadCount}
+              </Text>
+            </View>
+          )}
+        </AnimatedPressable>
         <AnimatedPressable onPress={() => navigation.navigate("Profile")}>
           <View
             style={{

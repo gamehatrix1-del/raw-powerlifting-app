@@ -1,19 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AnimatedPressable from "../../components/AnimatedPressable";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import ErrorState from "../../components/ErrorState";
 import SegmentedControl from "../../components/SegmentedControl";
+import { useAuth } from "../../context/AuthContext";
 import { formatDisplayDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
@@ -36,20 +26,17 @@ interface LoggedSet {
   weight: number | null;
   reps: number | null;
   rpe: number | null;
-  logged_at: string;
   coach_note: string | null;
-  coach_note_at: string | null;
 }
 
 export default function ProgramHistoryDetailScreen({ route }: any) {
   const { colors, typography, spacing, radius } = useTheme();
-  const { programId, programName, weekStartDate, status, athleteId, athleteName } = route.params as {
+  const { session } = useAuth();
+  const { programId, programName, weekStartDate, status } = route.params as {
     programId: string;
     programName: string;
     weekStartDate: string;
     status: string;
-    athleteId?: string;
-    athleteName?: string;
   };
 
   const [days, setDays] = useState<ProgramDay[]>([]);
@@ -58,9 +45,9 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
   const [activeDay, setActiveDay] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [noteTarget, setNoteTarget] = useState<{ set: LoggedSet; exerciseName: string } | null>(null);
 
   const load = useCallback(async () => {
+    if (!session) return;
     setLoading(true);
     setError(false);
 
@@ -107,11 +94,11 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
         setExercisesByDay(grouped);
 
         const programExerciseIds = (programExercises ?? []).map((row) => row.id);
-        if (athleteId && programExerciseIds.length > 0) {
+        if (programExerciseIds.length > 0) {
           const { data: logs, error: logsError } = await supabase
             .from("workout_logs")
-            .select("id, program_exercise_id, set_number, weight, reps, rpe, logged_at, coach_note, coach_note_at")
-            .eq("athlete_id", athleteId)
+            .select("id, program_exercise_id, set_number, weight, reps, rpe, coach_note")
+            .eq("athlete_id", session.user.id)
             .in("program_exercise_id", programExerciseIds)
             .order("set_number", { ascending: true });
 
@@ -131,41 +118,11 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
     }
 
     setLoading(false);
-  }, [programId, athleteId]);
+  }, [programId, session]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  async function saveNote(text: string) {
-    if (!noteTarget) return;
-    const trimmed = text.trim();
-    const { error: saveError } = await supabase
-      .from("workout_logs")
-      .update({
-        coach_note: trimmed || null,
-        coach_note_at: trimmed ? new Date().toISOString() : null,
-      })
-      .eq("id", noteTarget.set.id);
-
-    if (saveError) {
-      console.error("Failed to save coach note", saveError);
-      return;
-    }
-
-    setLogsByExercise((prev) => {
-      const list = prev[noteTarget.set.program_exercise_id] ?? [];
-      return {
-        ...prev,
-        [noteTarget.set.program_exercise_id]: list.map((s) =>
-          s.id === noteTarget.set.id
-            ? { ...s, coach_note: trimmed || null, coach_note_at: trimmed ? new Date().toISOString() : null }
-            : s
-        ),
-      };
-    });
-    setNoteTarget(null);
-  }
 
   if (loading) {
     return (
@@ -191,10 +148,7 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 20, paddingHorizontal: spacing.xl }}>
       <Text style={[typography.title, { color: colors.text }]}>{programName}</Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: 4, marginBottom: spacing.lg }}>
-        <Text style={[typography.caption, { color: colors.muted }]}>
-          Week of {formatDisplayDate(weekStartDate)}
-          {athleteName ? ` · ${athleteName}` : ""}
-        </Text>
+        <Text style={[typography.caption, { color: colors.muted }]}>Week of {formatDisplayDate(weekStartDate)}</Text>
         <View
           style={{
             backgroundColor: isActive ? colors.successMuted : colors.cardAlt,
@@ -235,12 +189,7 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
             return (
               <View
                 key={e.id}
-                style={{
-                  backgroundColor: colors.card,
-                  borderRadius: radius.lg,
-                  padding: spacing.lg,
-                  marginBottom: spacing.sm + 2,
-                }}
+                style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.sm + 2 }}
               >
                 <View style={{ flexDirection: "row" }}>
                   <View
@@ -278,141 +227,33 @@ export default function ProgramHistoryDetailScreen({ route }: any) {
                   </View>
                 </View>
 
-                {athleteId && (
-                  <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.background }}>
-                    {loggedSets.length === 0 ? (
-                      <Text style={[typography.caption, { color: colors.faint }]}>Not logged yet.</Text>
-                    ) : (
-                      loggedSets.map((s) => (
-                        <AnimatedPressable
-                          key={s.id}
-                          onPress={() => setNoteTarget({ set: s, exerciseName: e.name })}
-                          style={{ marginBottom: spacing.sm }}
-                        >
-                          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                            <Text style={[typography.caption, { color: colors.text }]}>
-                              Set {s.set_number}: {s.weight ?? "—"}kg × {s.reps ?? "—"}
-                              {s.rpe ? ` @ RPE ${s.rpe}` : ""}
+                <View style={{ marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.background }}>
+                  {loggedSets.length === 0 ? (
+                    <Text style={[typography.caption, { color: colors.faint }]}>Not logged.</Text>
+                  ) : (
+                    loggedSets.map((s) => (
+                      <View key={s.id} style={{ marginBottom: spacing.sm }}>
+                        <Text style={[typography.caption, { color: colors.text }]}>
+                          Set {s.set_number}: {s.weight ?? "—"}kg × {s.reps ?? "—"}
+                          {s.rpe ? ` @ RPE ${s.rpe}` : ""}
+                        </Text>
+                        {s.coach_note ? (
+                          <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 4, gap: 4 }}>
+                            <Ionicons name="chatbubble" size={11} color={colors.accent} style={{ marginTop: 2 }} />
+                            <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0, flex: 1 }]}>
+                              {s.coach_note}
                             </Text>
-                            <Ionicons
-                              name={s.coach_note ? "chatbubble" : "chatbubble-outline"}
-                              size={16}
-                              color={s.coach_note ? colors.accent : colors.faint}
-                            />
                           </View>
-                          {s.coach_note ? (
-                            <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0, marginTop: 2 }]} numberOfLines={2}>
-                              "{s.coach_note}"
-                            </Text>
-                          ) : null}
-                        </AnimatedPressable>
-                      ))
-                    )}
-                  </View>
-                )}
+                        ) : null}
+                      </View>
+                    ))
+                  )}
+                </View>
               </View>
             );
           })
         )}
       </ScrollView>
-
-      <NoteModal
-        visible={!!noteTarget}
-        exerciseName={noteTarget?.exerciseName ?? ""}
-        setNumber={noteTarget?.set.set_number ?? 0}
-        initialText={noteTarget?.set.coach_note ?? ""}
-        onClose={() => setNoteTarget(null)}
-        onSave={saveNote}
-      />
     </View>
-  );
-}
-
-function NoteModal({
-  visible,
-  exerciseName,
-  setNumber,
-  initialText,
-  onClose,
-  onSave,
-}: {
-  visible: boolean;
-  exerciseName: string;
-  setNumber: number;
-  initialText: string;
-  onClose: () => void;
-  onSave: (text: string) => Promise<void>;
-}) {
-  const { colors, typography, spacing, radius } = useTheme();
-  const insets = useSafeAreaInsets();
-  const [text, setText] = useState(initialText);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (visible) setText(initialText);
-  }, [visible, initialText]);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await onSave(text);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingHorizontal: spacing.xxl, paddingTop: spacing.xxl, paddingBottom: insets.bottom + spacing.xxl }}>
-            <Text style={[typography.heading, { color: colors.text, marginBottom: 4 }]}>Feedback on this set</Text>
-            <Text style={[typography.caption, { color: colors.muted, marginBottom: spacing.lg }]}>
-              {exerciseName} · Set {setNumber}
-            </Text>
-
-            <TextInput
-              style={{
-                backgroundColor: colors.background,
-                color: colors.text,
-                borderRadius: radius.md,
-                paddingHorizontal: spacing.lg,
-                paddingVertical: spacing.md,
-                fontSize: 15,
-                minHeight: 100,
-                textAlignVertical: "top",
-                marginBottom: spacing.lg,
-              }}
-              placeholder="e.g. Bar speed dropped on the last rep — let's cut 5kg next week."
-              placeholderTextColor={colors.faint}
-              value={text}
-              onChangeText={setText}
-              multiline
-              autoFocus
-            />
-
-            <View style={{ flexDirection: "row", gap: spacing.md }}>
-              <AnimatedPressable
-                style={{ flex: 1, backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
-                onPress={onClose}
-              >
-                <Text style={[typography.bodyStrong, { color: colors.muted }]}>Cancel</Text>
-              </AnimatedPressable>
-              <AnimatedPressable
-                style={{ flex: 1, backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: spacing.lg, alignItems: "center" }}
-                onPress={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color={colors.accentText} />
-                ) : (
-                  <Text style={[typography.bodyStrong, { color: colors.accentText }]}>Save</Text>
-                )}
-              </AnimatedPressable>
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
   );
 }
