@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import HomeScreen from "../screens/athlete/HomeScreen";
 import LibraryScreen from "../screens/athlete/LibraryScreen";
 import ProgressScreen from "../screens/athlete/ProgressScreen";
-import { useUnreadMessageCount } from "../hooks/useUnreadMessageCount";
+import { UnreadMessagesProvider, useUnreadMessageCount } from "../hooks/useUnreadMessageCount";
 import AthleteMembershipStack from "./AthleteMembershipStack";
 import AthleteProgramStack from "./AthleteProgramStack";
 import ProfileStack from "./ProfileStack";
@@ -29,7 +29,7 @@ const OUTLINE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Profile: "person-circle-outline",
 };
 
-export default function AthleteNavigator() {
+function AthleteTabs() {
   const { colors } = useTheme();
   const unreadCount = useUnreadMessageCount();
 
@@ -71,5 +71,13 @@ export default function AthleteNavigator() {
         options={{ tabBarBadge: unreadCount > 0 ? unreadCount : undefined }}
       />
     </Tab.Navigator>
+  );
+}
+
+export default function AthleteNavigator() {
+  return (
+    <UnreadMessagesProvider>
+      <AthleteTabs />
+    </UnreadMessagesProvider>
   );
 }

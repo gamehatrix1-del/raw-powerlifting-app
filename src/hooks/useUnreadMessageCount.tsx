@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { AppState } from "react-native";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
 // Live unread-message count for the athlete's own chat thread with their
-// coach. Updates instantly over Supabase Realtime when a new message
-// arrives (not just on a polling interval), so a badge using this hook
-// behaves like a proper "message has arrived" bubble.
-export function useUnreadMessageCount(): number {
+// coach, shared via context so every consumer (the tab badge, the Home
+// header bubble) reads the same value instead of each opening its own
+// Supabase Realtime subscription — two subscriptions on the same channel
+// topic throws ("cannot add postgres_changes callbacks... after
+// subscribe()") and crashes the app.
+const UnreadMessagesContext = createContext<number>(0);
+
+export function UnreadMessagesProvider({ children }: PropsWithChildren) {
   const { session } = useAuth();
   const [count, setCount] = useState(0);
 
@@ -50,5 +61,11 @@ export function useUnreadMessageCount(): number {
     };
   }, [check, session]);
 
-  return count;
+  return (
+    <UnreadMessagesContext.Provider value={count}>{children}</UnreadMessagesContext.Provider>
+  );
+}
+
+export function useUnreadMessageCount(): number {
+  return useContext(UnreadMessagesContext);
 }
