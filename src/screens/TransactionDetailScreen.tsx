@@ -21,35 +21,41 @@ interface TransactionDetail {
   athlete_name: string;
 }
 
-const STATUS_INFO: Record<
-  TransactionDetail["status"],
-  { icon: keyof typeof Ionicons.glyphMap; label: string; explanation: string; tone: "success" | "error" | "warning" }
-> = {
-  paid: {
-    icon: "checkmark-circle",
-    label: "Payment received",
-    explanation: "This payment went through successfully and the membership is active.",
-    tone: "success",
-  },
-  failed: {
-    icon: "close-circle",
-    label: "Payment didn't go through",
-    explanation: "The athlete's payment attempt failed. No money was taken. They can try again from their Plans tab.",
-    tone: "error",
-  },
-  created: {
-    icon: "time",
-    label: "Waiting for payment",
-    explanation: "The athlete started checkout but hasn't completed payment yet. This will update automatically once they finish, or fail if they abandon it.",
-    tone: "warning",
-  },
-  refunded: {
-    icon: "arrow-undo-circle",
-    label: "Refunded",
-    explanation: "This payment was refunded to the athlete.",
-    tone: "warning",
-  },
-};
+function statusInfo(
+  status: TransactionDetail["status"],
+  athleteName: string
+): { icon: keyof typeof Ionicons.glyphMap; label: string; explanation: string; tone: "success" | "error" | "warning" } {
+  switch (status) {
+    case "paid":
+      return {
+        icon: "checkmark-circle",
+        label: "Payment received",
+        explanation: "This payment went through successfully and the membership is active.",
+        tone: "success",
+      };
+    case "failed":
+      return {
+        icon: "close-circle",
+        label: "Payment didn't go through",
+        explanation: `${athleteName}'s payment attempt failed. No money was taken. They can try again from their Plans tab.`,
+        tone: "error",
+      };
+    case "created":
+      return {
+        icon: "time",
+        label: "Waiting for payment",
+        explanation: `${athleteName} started checkout but hasn't completed payment yet. This will update automatically once they finish, or fail if they abandon it.`,
+        tone: "warning",
+      };
+    case "refunded":
+      return {
+        icon: "arrow-undo-circle",
+        label: "Refunded",
+        explanation: `This payment was refunded to ${athleteName}.`,
+        tone: "warning",
+      };
+  }
+}
 
 function timeOfDay(iso: string): string {
   const d = new Date(iso);
@@ -117,7 +123,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
     );
   }
 
-  const info = STATUS_INFO[txn.status];
+  const info = statusInfo(txn.status, txn.athlete_name);
   const toneColor = info.tone === "success" ? colors.success : info.tone === "error" ? colors.error : colors.warning;
   const toneMuted = info.tone === "success" ? colors.successMuted : info.tone === "error" ? colors.errorMuted : colors.warningMuted;
   const isCoach = profile?.role === "coach";
