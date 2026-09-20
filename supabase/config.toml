@@ -403,6 +403,28 @@ s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
 
+# Explicit, git-tracked JWT verification setting per Edge Function — the
+# CLI's --no-verify-jwt flag only sets this on the deploy that uses it and
+# otherwise silently preserves whatever the platform already has stored,
+# so relying on flags alone lets this drift out of sync with intent.
+# true  = caller must present a valid Supabase JWT (athlete/coach session).
+# false = function does its own auth (HMAC signature, or a dedicated shared
+#         secret for pg_cron/pg_net server-to-server calls).
+[functions.create-razorpay-order]
+verify_jwt = true
+[functions.razorpay-webhook]
+verify_jwt = false
+[functions.delete-account]
+verify_jwt = true
+[functions.notify-athlete]
+verify_jwt = true
+[functions.broadcast-message]
+verify_jwt = true
+[functions.renewal-reminders]
+verify_jwt = false
+[functions.at-risk-digest]
+verify_jwt = false
+
 # pg-delta is the schema diff engine for db diff / db pull / db remote commit.
 # Set enabled = false to fall back to the legacy migra engine.
 [experimental.pgdelta]
