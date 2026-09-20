@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useTheme } from "../theme/ThemeContext";
 import AthleteDetailScreen from "../screens/coach/AthleteDetailScreen";
+import BulkAssignTemplateScreen from "../screens/coach/BulkAssignTemplateScreen";
 import ChatScreen from "../screens/ChatScreen";
 import DashboardScreen from "../screens/coach/DashboardScreen";
 import ProgramBuilderScreen from "../screens/coach/ProgramBuilderScreen";
@@ -42,6 +43,11 @@ export default function CoachDashboardStack() {
         name="Chat"
         component={ChatScreen}
         options={({ route }: any) => ({ title: route.params?.athleteName ?? "Chat" })}
+      />
+      <Stack.Screen
+        name="BulkAssignTemplate"
+        component={BulkAssignTemplateScreen}
+        options={{ title: "Bulk Assign Template" }}
       />
     </Stack.Navigator>
   );

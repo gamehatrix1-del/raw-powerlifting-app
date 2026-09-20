@@ -265,6 +265,12 @@ export default function DashboardScreen({ navigation }: any) {
       <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.lg }}>
         <Text style={[typography.title, { color: colors.text, flex: 1 }]}>Athletes</Text>
         <AnimatedPressable
+          onPress={() => navigation.navigate("BulkAssignTemplate")}
+          style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: "center", justifyContent: "center", marginRight: spacing.sm }}
+        >
+          <Ionicons name="copy-outline" size={18} color={colors.accent} />
+        </AnimatedPressable>
+        <AnimatedPressable
           onPress={() => setBroadcastVisible(true)}
           style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: "center", justifyContent: "center" }}
         >
