@@ -365,13 +365,19 @@ export default function DashboardScreen({ navigation }: any) {
           renderItem={({ item }) => {
             const status = statusFor(item);
             const payment = paymentStatusFor(item);
+            const toneColor = (tone: "critical" | "warn" | "ok") =>
+              tone === "critical" ? colors.error : tone === "warn" ? colors.warning : colors.success;
+            const initial = item.profile.full_name?.trim()?.[0]?.toUpperCase() ?? "?";
+
             return (
               <AnimatedPressable
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: colors.card,
                   borderRadius: radius.md,
-                  padding: spacing.lg,
                   marginBottom: spacing.sm + 2,
+                  overflow: "hidden",
                 }}
                 onPress={() =>
                   navigation.navigate("AthleteDetail", {
@@ -380,31 +386,55 @@ export default function DashboardScreen({ navigation }: any) {
                   })
                 }
               >
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm, gap: spacing.sm }}>
-                  <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 16, flex: 1 }]}>
-                    {item.profile.full_name}
-                  </Text>
-                  {item.unreadCount > 0 && (
-                    <View
-                      style={{
-                        minWidth: 20,
-                        height: 20,
-                        borderRadius: 10,
-                        paddingHorizontal: 6,
-                        backgroundColor: colors.accent,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={[typography.micro, { color: colors.accentText, letterSpacing: 0 }]}>
-                        {item.unreadCount}
+                {/* A single glance at the color running down the list tells the
+                    coach who needs attention before reading a word of text. */}
+                <View style={{ width: 3, alignSelf: "stretch", backgroundColor: toneColor(status.tone) }} />
+
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", padding: spacing.md + 2 }}>
+                  <View
+                    style={{
+                      width: 40, height: 40, borderRadius: 20,
+                      backgroundColor: colors.accentMuted,
+                      alignItems: "center", justifyContent: "center",
+                      marginRight: spacing.md,
+                    }}
+                  >
+                    <Text style={[typography.bodyStrong, { color: colors.accent, fontSize: 15 }]}>{initial}</Text>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 15 }]} numberOfLines={1}>
+                      {item.profile.full_name}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3, gap: 5 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: toneColor(status.tone) }} />
+                      <Text style={[typography.caption, { color: colors.muted, fontSize: 12.5, flexShrink: 1 }]} numberOfLines={1}>
+                        {status.label}
                       </Text>
                     </View>
-                  )}
-                </View>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  <StatusBadge tone={status.tone} label={status.label} />
-                  <StatusBadge tone={payment.tone} label={payment.label} />
+                  </View>
+
+                  <View style={{ alignItems: "flex-end", gap: 6, marginLeft: spacing.sm }}>
+                    {item.unreadCount > 0 && (
+                      <View
+                        style={{
+                          minWidth: 19, height: 19, borderRadius: 9.5,
+                          paddingHorizontal: 5,
+                          backgroundColor: colors.accent,
+                          alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Text style={[typography.micro, { color: colors.accentText, letterSpacing: 0, fontSize: 10 }]}>
+                          {item.unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                    {payment.tone !== "ok" && (
+                      <Ionicons name="card" size={15} color={toneColor(payment.tone)} />
+                    )}
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={16} color={colors.faint} style={{ marginLeft: spacing.xs }} />
                 </View>
               </AnimatedPressable>
             );
@@ -501,16 +531,5 @@ function BroadcastModal({
         </View>
       </KeyboardAvoidingView>
     </Modal>
-  );
-}
-
-function StatusBadge({ tone, label }: { tone: "critical" | "warn" | "ok"; label: string }) {
-  const { colors, typography, spacing, radius } = useTheme();
-  const bg = tone === "critical" ? colors.errorMuted : tone === "warn" ? colors.warningMuted : colors.successMuted;
-  const fg = tone === "critical" ? colors.error : tone === "warn" ? colors.warning : colors.success;
-  return (
-    <View style={{ borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, backgroundColor: bg }}>
-      <Text style={[typography.micro, { color: fg, letterSpacing: 0 }]}>{label}</Text>
-    </View>
   );
 }
