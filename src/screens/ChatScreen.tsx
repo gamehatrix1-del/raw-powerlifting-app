@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAuth } from "../context/AuthContext";
+import { dateKey, formatDisplayDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
 import { useTheme } from "../theme/ThemeContext";
 
@@ -23,6 +24,17 @@ interface Message {
   created_at: string;
   read_at: string | null;
 }
+
+function dayLabel(iso: string): string {
+  const today = dateKey(new Date().toISOString());
+  const yesterday = dateKey(new Date(Date.now() - 86400000).toISOString());
+  const key = dateKey(iso);
+  if (key === today) return "Today";
+  if (key === yesterday) return "Yesterday";
+  return formatDisplayDate(key);
+}
+
+type ListItem = { kind: "separator"; id: string; label: string } | { kind: "message"; id: string; message: Message };
 
 export default function ChatScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
@@ -39,6 +51,23 @@ export default function ChatScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  // Messages are already sorted ascending — insert a separator whenever the
+  // calendar day changes so a thread spanning several days (up to the 7-day
+  // retention window) is never ambiguous about when something was sent.
+  const listItems = useMemo(() => {
+    const items: ListItem[] = [];
+    let lastDay: string | null = null;
+    for (const m of messages) {
+      const day = dateKey(m.created_at);
+      if (day !== lastDay) {
+        items.push({ kind: "separator", id: `sep-${day}`, label: dayLabel(m.created_at) });
+        lastDay = day;
+      }
+      items.push({ kind: "message", id: m.id, message: m });
+    }
+    return items;
+  }, [messages]);
 
   const load = useCallback(async () => {
     if (!athleteId) return;
@@ -186,7 +215,7 @@ export default function ChatScreen({ route, navigation }: any) {
       ) : (
         <FlatList
           ref={listRef}
-          data={messages}
+          data={listItems}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xl }}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
@@ -201,7 +230,25 @@ export default function ChatScreen({ route, navigation }: any) {
             </View>
           }
           renderItem={({ item }) => {
-            const mine = item.sender_id === session?.user.id;
+            if (item.kind === "separator") {
+              return (
+                <View style={{ alignItems: "center", marginVertical: spacing.sm }}>
+                  <View
+                    style={{
+                      backgroundColor: colors.cardAlt,
+                      borderRadius: radius.pill,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <Text style={[typography.micro, { color: colors.faint, letterSpacing: 0 }]}>{item.label}</Text>
+                  </View>
+                </View>
+              );
+            }
+
+            const message = item.message;
+            const mine = message.sender_id === session?.user.id;
             return (
               <View
                 style={{
@@ -214,14 +261,14 @@ export default function ChatScreen({ route, navigation }: any) {
                   maxWidth: "80%",
                 }}
               >
-                <Text style={[typography.body, { color: mine ? colors.accentText : colors.text }]}>{item.body}</Text>
+                <Text style={[typography.body, { color: mine ? colors.accentText : colors.text }]}>{message.body}</Text>
                 <Text
                   style={[
                     typography.micro,
                     { color: mine ? colors.accentText : colors.faint, opacity: 0.7, marginTop: 4, letterSpacing: 0 },
                   ]}
                 >
-                  {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </Text>
               </View>
             );
