@@ -52,6 +52,15 @@ export default function ChatScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList>(null);
+  // Supabase hands out a new session object reference on every auth event
+  // (e.g. token refresh) even when it's still the same logged-in user —
+  // read through a ref instead of depending on `session` directly, so
+  // effects below don't tear down and re-subscribe the realtime channel
+  // on every refresh (recreating a channel with the same topic name
+  // before the old one finishes unsubscribing crashes with "cannot add
+  // postgres_changes callbacks ... after subscribe()").
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   // Messages are already sorted ascending — insert a separator whenever the
   // calendar day changes so a thread spanning several days (up to the 7-day
@@ -88,9 +97,10 @@ export default function ChatScreen({ route, navigation }: any) {
     setLoading(false);
 
     // Mark incoming messages as read now that the thread is open.
-    if (session) {
+    const currentSession = sessionRef.current;
+    if (currentSession) {
       const unreadIds = (data ?? [])
-        .filter((m) => m.sender_id !== session.user.id && !m.read_at)
+        .filter((m) => m.sender_id !== currentSession.user.id && !m.read_at)
         .map((m) => m.id);
       if (unreadIds.length > 0) {
         supabase
@@ -102,7 +112,7 @@ export default function ChatScreen({ route, navigation }: any) {
           });
       }
     }
-  }, [athleteId, session]);
+  }, [athleteId]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", load);
@@ -121,7 +131,8 @@ export default function ChatScreen({ route, navigation }: any) {
         (payload) => {
           const incoming = payload.new as Message;
           setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
-          if (session && incoming.sender_id !== session.user.id) {
+          const currentSession = sessionRef.current;
+          if (currentSession && incoming.sender_id !== currentSession.user.id) {
             supabase
               .from("messages")
               .update({ read_at: new Date().toISOString() })
@@ -135,7 +146,7 @@ export default function ChatScreen({ route, navigation }: any) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [athleteId, session]);
+  }, [athleteId]);
 
   async function handleSend() {
     const body = draft.trim();

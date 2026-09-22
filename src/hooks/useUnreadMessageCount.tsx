@@ -20,21 +20,30 @@ const UnreadMessagesContext = createContext<number>(0);
 
 export function UnreadMessagesProvider({ children }: PropsWithChildren) {
   const { session } = useAuth();
+  // Supabase hands out a new session object reference on every auth event
+  // (e.g. token refresh) even for the same logged-in user. Keying `check`
+  // and the effect below on the object itself — rather than the id string,
+  // which only actually changes on a real login/logout — caused the
+  // effect to tear down and immediately reopen a Realtime channel with the
+  // same topic name on every refresh, racing the async unsubscribe and
+  // crashing with "cannot add postgres_changes callbacks ... after
+  // subscribe()".
+  const userId = session?.user.id;
   const [count, setCount] = useState(0);
 
   const check = useCallback(async () => {
-    if (!session) return;
+    if (!userId) return;
     const { count: unread } = await supabase
       .from("messages")
       .select("id", { count: "exact", head: true })
-      .eq("athlete_id", session.user.id)
-      .neq("sender_id", session.user.id)
+      .eq("athlete_id", userId)
+      .neq("sender_id", userId)
       .is("read_at", null);
     setCount(unread ?? 0);
-  }, [session]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!session) {
+    if (!userId) {
       setCount(0);
       return;
     }
@@ -46,10 +55,10 @@ export function UnreadMessagesProvider({ children }: PropsWithChildren) {
     });
 
     const channel = supabase
-      .channel(`unread-${session.user.id}`)
+      .channel(`unread-${userId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "messages", filter: `athlete_id=eq.${session.user.id}` },
+        { event: "*", schema: "public", table: "messages", filter: `athlete_id=eq.${userId}` },
         () => check()
       )
       .subscribe();
@@ -59,7 +68,7 @@ export function UnreadMessagesProvider({ children }: PropsWithChildren) {
       sub.remove();
       supabase.removeChannel(channel);
     };
-  }, [check, session]);
+  }, [check, userId]);
 
   return (
     <UnreadMessagesContext.Provider value={count}>{children}</UnreadMessagesContext.Provider>
