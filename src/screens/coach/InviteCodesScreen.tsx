@@ -144,7 +144,7 @@ export default function InviteCodesScreen({ navigation }: any) {
               </View>
               <View
                 style={{
-                  borderRadius: radius.pill,
+                  borderRadius: radius.tag,
                   paddingHorizontal: spacing.sm + 2,
                   paddingVertical: 4,
                   backgroundColor: item.used_at ? colors.cardAlt : colors.successMuted,

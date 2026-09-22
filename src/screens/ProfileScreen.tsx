@@ -100,7 +100,7 @@ export default function ProfileScreen({ navigation }: any) {
           style={{
             marginTop: 6,
             backgroundColor: colors.accentMuted,
-            borderRadius: radius.pill,
+            borderRadius: radius.tag,
             paddingHorizontal: spacing.md,
             paddingVertical: 4,
           }}

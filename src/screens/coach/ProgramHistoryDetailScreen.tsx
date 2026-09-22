@@ -238,7 +238,7 @@ export default function ProgramHistoryDetailScreen({ route, navigation }: any) {
         <View
           style={{
             backgroundColor: isActive ? colors.successMuted : colors.cardAlt,
-            borderRadius: radius.pill,
+            borderRadius: radius.tag,
             paddingHorizontal: 8,
             paddingVertical: 2,
           }}

@@ -236,7 +236,7 @@ export default function ChatScreen({ route, navigation }: any) {
                   <View
                     style={{
                       backgroundColor: colors.cardAlt,
-                      borderRadius: radius.pill,
+                      borderRadius: radius.tag,
                       paddingHorizontal: spacing.md,
                       paddingVertical: 4,
                     }}

@@ -222,7 +222,7 @@ export default function MembershipScreen({ navigation }: any) {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Text style={[typography.bodyStrong, { color: colors.text, fontSize: 16 }]}>{plan.name}</Text>
                 {isCurrent && (
-                  <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
+                  <View style={{ backgroundColor: colors.accentMuted, borderRadius: radius.tag, paddingHorizontal: 8, paddingVertical: 2 }}>
                     <Text style={[typography.micro, { color: colors.accent, letterSpacing: 0 }]}>CURRENT</Text>
                   </View>
                 )}
