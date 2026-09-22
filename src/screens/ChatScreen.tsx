@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
-  Platform,
   Text,
   TextInput,
   View,
@@ -27,6 +27,7 @@ interface Message {
 export default function ChatScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { session, profile } = useAuth();
   const isCoach = profile?.role === "coach";
   const params = (route.params ?? {}) as { athleteId?: string; athleteName?: string };
@@ -160,7 +161,7 @@ export default function ChatScreen({ route, navigation }: any) {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior="padding"
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      keyboardVerticalOffset={headerHeight}
     >
       <View
         style={{

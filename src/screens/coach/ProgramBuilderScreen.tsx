@@ -1,10 +1,10 @@
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -51,6 +51,7 @@ function emptyDays(): DraftDay[] {
 export default function ProgramBuilderScreen({ route, navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const alert = useAppAlert();
   const { athleteId, athleteName } = route.params as {
     athleteId: string;
@@ -415,6 +416,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
       behavior="padding"
+      keyboardVerticalOffset={headerHeight}
     >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: spacing.xxl, paddingBottom: spacing.xxl }}

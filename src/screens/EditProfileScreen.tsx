@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Text,
   View,
@@ -102,6 +102,7 @@ function Section({
 
 export default function EditProfileScreen({ navigation }: any) {
   const { colors, typography, spacing, radius } = useTheme();
+  const headerHeight = useHeaderHeight();
   const alert = useAppAlert();
   const { session, profile, athleteProfile, refreshProfile, refreshAthleteProfile } = useAuth();
   const isAthlete = profile?.role === "athlete";
@@ -266,6 +267,7 @@ export default function EditProfileScreen({ navigation }: any) {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior="padding"
+      keyboardVerticalOffset={headerHeight}
     >
       <ScrollView
         contentContainerStyle={{ padding: spacing.xl, paddingBottom: spacing.xxl * 2 }}

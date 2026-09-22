@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Text, View } from "react-native";
 import AnimatedPressable from "../components/AnimatedPressable";
 import { useAppAlert } from "../components/AppAlert";
 import AppTextInput from "../components/AppTextInput";
@@ -9,6 +10,7 @@ import { useTheme } from "../theme/ThemeContext";
 
 export default function ChangePasswordScreen({ navigation }: any) {
   const { colors, typography, spacing } = useTheme();
+  const headerHeight = useHeaderHeight();
   const alert = useAppAlert();
   const { changePassword } = useAuth();
   const [newPassword, setNewPassword] = useState("");
@@ -43,6 +45,7 @@ export default function ChangePasswordScreen({ navigation }: any) {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, padding: spacing.xl }}
       behavior="padding"
+      keyboardVerticalOffset={headerHeight}
     >
       <View
         style={{

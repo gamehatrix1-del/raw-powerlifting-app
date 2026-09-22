@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   AppState,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -56,6 +56,7 @@ function startOfToday(): string {
 export default function WorkoutLogScreen({ route }: any) {
   const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const alert = useAppAlert();
   const { programDayId, dayLabel } = route.params as {
     programDayId: string;
@@ -403,6 +404,7 @@ export default function WorkoutLogScreen({ route }: any) {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}
       behavior="padding"
+      keyboardVerticalOffset={headerHeight}
     >
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: spacing.xl, paddingBottom: 120 }}
