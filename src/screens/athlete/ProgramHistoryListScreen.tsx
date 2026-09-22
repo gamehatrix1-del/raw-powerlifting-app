@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { formatDisplayDate, thisMonday } from "../../lib/dates";
@@ -68,11 +69,7 @@ export default function ProgramHistoryListScreen({ navigation }: any) {
         data={programs}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 40 }}
-        ListEmptyComponent={
-          <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-            No past programs yet.
-          </Text>
-        }
+        ListEmptyComponent={<EmptyState icon="calendar-outline" message="No past programs yet" />}
         renderItem={({ item }) => (
           <AnimatedPressable
             style={{

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import DateField from "../../components/DateField";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
@@ -215,9 +216,11 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 40 }}
           ListEmptyComponent={
-            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              No saved templates yet. Build a week in Program Builder and tap "Save as Template" first.
-            </Text>
+            <EmptyState
+              icon="document-text-outline"
+              message="No saved templates yet"
+              subtext={'Build a week in Program Builder and tap "Save as Template" first.'}
+            />
           }
           renderItem={({ item }) => (
             <AnimatedPressable
@@ -261,11 +264,7 @@ export default function BulkAssignTemplateScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 100 }}
-        ListEmptyComponent={
-          <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-            No athletes have signed up yet.
-          </Text>
-        }
+        ListEmptyComponent={<EmptyState icon="people-outline" message="No athletes have signed up yet" />}
         renderItem={({ item }) => {
           const selected = selectedAthleteIds.has(item.id);
           return (

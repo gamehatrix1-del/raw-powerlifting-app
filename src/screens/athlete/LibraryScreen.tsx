@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import SegmentedControl from "../../components/SegmentedControl";
 import { supabase } from "../../lib/supabase";
@@ -119,11 +120,7 @@ export default function LibraryScreen({ navigation }: any) {
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 40 }}
-          ListEmptyComponent={
-            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              No exercises match.
-            </Text>
-          }
+          ListEmptyComponent={<EmptyState icon="barbell-outline" message="No exercises match" />}
           renderItem={({ item }) => (
             <AnimatedPressable
               style={{

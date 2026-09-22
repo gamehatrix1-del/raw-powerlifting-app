@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { addInterval, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
@@ -354,13 +355,16 @@ export default function DashboardScreen({ navigation }: any) {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              {rows.length === 0
-                ? "No athletes have signed up yet."
-                : filter !== "all"
-                ? "No athletes match this filter."
-                : "No athletes match your search."}
-            </Text>
+            <EmptyState
+              icon="people-outline"
+              message={
+                rows.length === 0
+                  ? "No athletes have signed up yet"
+                  : filter !== "all"
+                  ? "No athletes match this filter"
+                  : "No athletes match your search"
+              }
+            />
           }
           renderItem={({ item }) => {
             const status = statusFor(item);

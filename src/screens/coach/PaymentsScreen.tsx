@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
@@ -208,9 +209,7 @@ export default function PaymentsScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         ListEmptyComponent={
-          <Text style={[typography.caption, { color: colors.muted }]}>
-            No payments yet. Checkout goes live once Razorpay is wired up.
-          </Text>
+          <EmptyState icon="receipt-outline" message="No payments yet" subtext="Checkout goes live once Razorpay is wired up." />
         }
         renderItem={({ item }) => (
           <AnimatedPressable

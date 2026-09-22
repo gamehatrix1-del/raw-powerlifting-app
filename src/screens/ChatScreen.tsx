@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../components/AnimatedPressable";
+import EmptyState from "../components/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { dateKey, formatDisplayDate } from "../lib/dates";
 import { supabase } from "../lib/supabase";
@@ -220,13 +221,12 @@ export default function ChatScreen({ route, navigation }: any) {
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xl }}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
-            <View style={{ marginTop: 60, alignItems: "center" }}>
-              <Ionicons name="chatbubbles-outline" size={32} color={colors.faint} style={{ marginBottom: spacing.sm }} />
-              <Text style={[typography.body, { color: colors.muted, textAlign: "center" }]}>
-                {isCoach
-                  ? `Start the conversation with ${athleteName ?? "this athlete"}.`
-                  : "Message your coach — questions, form checks, schedule changes."}
-              </Text>
+            <View style={{ marginTop: 60 }}>
+              <EmptyState
+                icon="chatbubbles-outline"
+                message={isCoach ? `Start the conversation with ${athleteName ?? "this athlete"}.` : "Message your coach"}
+                subtext={isCoach ? undefined : "Questions, form checks, schedule changes."}
+              />
             </View>
           }
           renderItem={({ item }) => {

@@ -5,6 +5,7 @@ import RazorpayCheckout from "react-native-razorpay";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { addInterval, formatDisplayDate } from "../../lib/dates";
@@ -264,9 +265,7 @@ export default function MembershipScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: spacing.xxl }}
-        ListEmptyComponent={
-          <Text style={[typography.caption, { color: colors.muted }]}>No payments yet.</Text>
-        }
+        ListEmptyComponent={<EmptyState icon="receipt-outline" message="No payments yet" />}
         renderItem={({ item }) => (
           <AnimatedPressable
             style={{

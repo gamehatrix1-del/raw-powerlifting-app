@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import LineChart from "../../components/LineChart";
 import StatTile from "../../components/StatTile";
@@ -209,15 +210,12 @@ export default function ProgressScreen({ navigation }: any) {
       </View>
 
       {total === 0 ? (
-        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.xxl, alignItems: "center" }}>
-          <Ionicons name="trending-up-outline" size={26} color={colors.faint} style={{ marginBottom: spacing.sm }} />
-          <Text style={[typography.bodyStrong, { color: colors.text, marginBottom: 4, textAlign: "center" }]}>
-            No lift trends yet
-          </Text>
-          <Text style={[typography.caption, { color: colors.muted, textAlign: "center" }]}>
-            Estimated 1RM trends for squat, bench, and deadlift will show up here once you've logged sets for
-            those lifts.
-          </Text>
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg }}>
+          <EmptyState
+            icon="trending-up-outline"
+            message="No lift trends yet"
+            subtext="Estimated 1RM trends for squat, bench, and deadlift will show up here once you've logged sets for those lifts."
+          />
         </View>
       ) : (
         LIFTS.map((lift) => {

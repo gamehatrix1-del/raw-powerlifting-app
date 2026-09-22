@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -187,9 +188,11 @@ export default function LibraryScreen({ navigation }: any) {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              {exercises.length === 0 ? "No exercises yet. Add the first one." : "No exercises match your search."}
-            </Text>
+            <EmptyState
+              icon="barbell-outline"
+              message={exercises.length === 0 ? "No exercises yet" : "No exercises match your search"}
+              subtext={exercises.length === 0 ? "Add the first one above." : undefined}
+            />
           }
           renderItem={({ item }) => (
             <AnimatedPressable

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import DateField from "../../components/DateField";
+import EmptyState from "../../components/EmptyState";
 import SegmentedControl from "../../components/SegmentedControl";
 import { useAuth } from "../../context/AuthContext";
 import { thisMonday } from "../../lib/dates";
@@ -689,9 +690,11 @@ function TemplatePickerModal({
               keyExtractor={(item) => item.id}
               style={{ maxHeight: 320 }}
               ListEmptyComponent={
-                <Text style={[typography.caption, { color: colors.muted, textAlign: "center", marginTop: 20 }]}>
-                  No saved templates yet. Build a week and tap "Save as Template".
-                </Text>
+                <EmptyState
+                  icon="document-text-outline"
+                  message="No saved templates yet"
+                  subtext={'Build a week and tap "Save as Template".'}
+                />
               }
               renderItem={({ item }) => (
                 <AnimatedPressable
@@ -807,9 +810,7 @@ function ExercisePickerModal({
                 keyExtractor={(item) => item.id}
                 style={{ maxHeight: 300 }}
                 ListEmptyComponent={
-                  <Text style={[typography.caption, { color: colors.muted, textAlign: "center", marginTop: 20 }]}>
-                    No exercises match. Add some in the Library tab first.
-                  </Text>
+                  <EmptyState icon="barbell-outline" message="No exercises match" subtext="Add some in the Library tab first." />
                 }
                 renderItem={({ item }) => (
                   <AnimatedPressable

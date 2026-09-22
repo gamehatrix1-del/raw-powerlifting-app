@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Share, Text, View } from "react-native";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
+import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -119,11 +120,7 @@ export default function InviteCodesScreen({ navigation }: any) {
           data={codes}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingBottom: 40 }}
-          ListEmptyComponent={
-            <Text style={[typography.body, { color: colors.muted, textAlign: "center", marginTop: 40 }]}>
-              No invite codes yet — generate one above.
-            </Text>
-          }
+          ListEmptyComponent={<EmptyState icon="key-outline" message="No invite codes yet" subtext="Generate one above." />}
           renderItem={({ item }) => (
             <View
               style={{
