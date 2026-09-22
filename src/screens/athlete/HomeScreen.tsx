@@ -192,7 +192,6 @@ export default function HomeScreen({ navigation }: any) {
               width: 44, height: 44, borderRadius: 22,
               backgroundColor: colors.accentMuted,
               alignItems: "center", justifyContent: "center",
-              borderWidth: 1.5, borderColor: colors.accent,
             }}
           >
             <Text style={[typography.bodyStrong, { color: colors.accent }]}>{initial}</Text>
