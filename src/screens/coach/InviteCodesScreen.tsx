@@ -6,6 +6,7 @@ import { useAppAlert } from "../../components/AppAlert";
 import EmptyState from "../../components/EmptyState";
 import ErrorState from "../../components/ErrorState";
 import { useAuth } from "../../context/AuthContext";
+import { formatDisplayDate } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 
@@ -136,7 +137,7 @@ export default function InviteCodesScreen({ navigation }: any) {
               <View>
                 <Text style={[typography.bodyStrong, { color: colors.text, letterSpacing: 2 }]}>{item.code}</Text>
                 <Text style={[typography.caption, { color: colors.muted, marginTop: 2 }]}>
-                  {item.used_at ? `Used ${new Date(item.used_at).toLocaleDateString()}` : "Not used yet"}
+                  {item.used_at ? `Used ${formatDisplayDate(item.used_at)}` : "Not used yet"}
                 </Text>
               </View>
               <View

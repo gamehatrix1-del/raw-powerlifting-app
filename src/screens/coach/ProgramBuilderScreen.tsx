@@ -17,7 +17,7 @@ import DateField from "../../components/DateField";
 import EmptyState from "../../components/EmptyState";
 import SegmentedControl from "../../components/SegmentedControl";
 import { useAuth } from "../../context/AuthContext";
-import { thisMonday } from "../../lib/dates";
+import { formatDisplayDate, thisMonday } from "../../lib/dates";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../theme/ThemeContext";
 import { Exercise } from "../../types/exercise";
@@ -60,7 +60,7 @@ export default function ProgramBuilderScreen({ route, navigation }: any) {
   };
   const { session } = useAuth();
 
-  const [programName, setProgramName] = useState(`Week of ${thisMonday()}`);
+  const [programName, setProgramName] = useState(`Week of ${formatDisplayDate(thisMonday())}`);
   const [weekStartDate, setWeekStartDate] = useState(thisMonday());
   const [days, setDays] = useState<DraftDay[]>(emptyDays());
   const [activeDay, setActiveDay] = useState(0);
