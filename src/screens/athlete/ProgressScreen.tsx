@@ -183,17 +183,8 @@ export default function ProgressScreen({ navigation }: any) {
       )}
 
       <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md + 2 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2 }}>
-          <View
-            style={{
-              width: 32, height: 32, borderRadius: 16,
-              backgroundColor: colors.accentMuted,
-              alignItems: "center", justifyContent: "center",
-              marginRight: spacing.sm + 2,
-            }}
-          >
-            <Ionicons name="scale-outline" size={15} color={colors.accent} />
-          </View>
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2, gap: spacing.sm }}>
+          <Ionicons name="scale-outline" size={17} color={colors.accent} />
           <View style={{ flex: 1 }}>
             <Text style={[typography.subheading, { color: colors.text }]}>Bodyweight</Text>
             {weightSeries.length > 0 && (
@@ -241,17 +232,8 @@ export default function ProgressScreen({ navigation }: any) {
             key={lift.key}
             style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md + 2 }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2 }}>
-              <View
-                style={{
-                  width: 32, height: 32, borderRadius: 16,
-                  backgroundColor: colors.accentMuted,
-                  alignItems: "center", justifyContent: "center",
-                  marginRight: spacing.sm + 2,
-                }}
-              >
-                <Ionicons name={lift.icon} size={15} color={colors.accent} />
-              </View>
+            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.sm + 2, gap: spacing.sm }}>
+              <Ionicons name={lift.icon} size={17} color={colors.accent} />
               <View style={{ flex: 1 }}>
                 <Text style={[typography.subheading, { color: colors.text }]}>{lift.label}</Text>
                 {latest && (

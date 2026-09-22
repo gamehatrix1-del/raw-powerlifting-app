@@ -78,18 +78,10 @@ function Section({
           alignItems: "center",
           paddingVertical: spacing.lg,
           paddingHorizontal: spacing.lg,
+          gap: spacing.sm + 2,
         }}
       >
-        <View
-          style={{
-            width: 32, height: 32, borderRadius: 16,
-            backgroundColor: colors.accentMuted,
-            alignItems: "center", justifyContent: "center",
-            marginRight: spacing.md,
-          }}
-        >
-          <Ionicons name={icon} size={16} color={colors.accent} />
-        </View>
+        <Ionicons name={icon} size={17} color={colors.accent} />
         <Text style={[typography.bodyStrong, { color: colors.text, flex: 1, fontSize: 16 }]}>{title}</Text>
         <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={18} color={colors.faint} />
       </AnimatedPressable>
