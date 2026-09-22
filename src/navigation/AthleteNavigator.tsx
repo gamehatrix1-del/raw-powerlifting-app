@@ -76,8 +76,12 @@ function AthleteTabs() {
           // stack, which leaves it as the "current" screen here — so a
           // later tap on the Profile tab just re-shows Chat instead of
           // the actual menu. Tapping the tab icon should always land on
-          // the menu.
-          tabPress: () => {
+          // the menu. preventDefault is required — without it, the
+          // navigator's own default tab-press action (which reactivates
+          // whatever screen was last shown, i.e. Chat) fires right after
+          // this listener and can silently undo the navigate below.
+          tabPress: (e) => {
+            e.preventDefault();
             navigation.navigate("Profile", { screen: "ProfileHome" });
           },
         })}

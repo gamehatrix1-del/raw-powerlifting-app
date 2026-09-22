@@ -62,8 +62,13 @@ export default function CoachNavigator() {
         listeners={({ navigation }) => ({
           // Always land on the menu when the tab icon itself is pressed,
           // even if a deeper screen in this stack (e.g. Chat, Invite
-          // Codes) was left active from an earlier visit.
-          tabPress: () => {
+          // Codes) was left active from an earlier visit. preventDefault
+          // is required — without it, the navigator's own default
+          // tab-press action (which reactivates whatever screen was last
+          // shown) fires right after this listener and can silently undo
+          // the navigate below.
+          tabPress: (e) => {
+            e.preventDefault();
             navigation.navigate("Profile", { screen: "ProfileHome" });
           },
         })}
