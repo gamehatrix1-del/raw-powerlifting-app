@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import ErrorState from "../../components/ErrorState";
 import ProgressRing from "../../components/ProgressRing";
@@ -25,7 +24,7 @@ function greeting(): string {
 }
 
 export default function HomeScreen({ navigation }: any) {
-  const { colors, typography, spacing, radius, isDark } = useTheme();
+  const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { profile, session } = useAuth();
   const unreadCount = useUnreadMessageCount();
@@ -240,24 +239,21 @@ export default function HomeScreen({ navigation }: any) {
       )}
 
       <AnimatedPressable
-        style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.lg }}
+        style={{
+          borderRadius: radius.lg,
+          overflow: "hidden",
+          marginBottom: spacing.lg,
+          backgroundColor: colors.card,
+          flexDirection: "row",
+        }}
         onPress={() =>
           program
             ? navigation.navigate("Program", { screen: "ProgramHome" })
             : navigation.navigate("Profile", { screen: "Chat" })
         }
       >
-        <View style={{ padding: spacing.xl }}>
-          <Svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
-            <Defs>
-              <LinearGradient id="homeHero" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={colors.accent} stopOpacity={isDark ? 0.32 : 0.14} />
-                <Stop offset="1" stopColor={colors.card} stopOpacity={1} />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#homeHero)" />
-          </Svg>
-
+        <View style={{ width: 3, backgroundColor: colors.accent }} />
+        <View style={{ padding: spacing.xl, flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View style={{ flex: 1 }}>
               <Text style={[typography.micro, { color: colors.accent, letterSpacing: 1 }]}>

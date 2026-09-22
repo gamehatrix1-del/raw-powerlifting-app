@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import RazorpayCheckout from "react-native-razorpay";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import ErrorState from "../../components/ErrorState";
@@ -24,7 +23,7 @@ interface PaymentRow {
 }
 
 export default function MembershipScreen({ navigation }: any) {
-  const { colors, typography, spacing, radius, isDark } = useTheme();
+  const { colors, typography, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const alert = useAppAlert();
   const { session } = useAuth();
@@ -164,17 +163,17 @@ export default function MembershipScreen({ navigation }: any) {
         </View>
       )}
 
-      <View style={{ borderRadius: radius.xl, overflow: "hidden", marginBottom: spacing.xxl }}>
-        <View style={{ padding: spacing.xl }}>
-          <Svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, right: 0, bottom: 0 }}>
-            <Defs>
-              <LinearGradient id="membershipHero" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={colors.accent} stopOpacity={isDark ? 0.3 : 0.13} />
-                <Stop offset="1" stopColor={colors.card} stopOpacity={1} />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#membershipHero)" />
-          </Svg>
+      <View
+        style={{
+          borderRadius: radius.lg,
+          overflow: "hidden",
+          marginBottom: spacing.xxl,
+          backgroundColor: colors.card,
+          flexDirection: "row",
+        }}
+      >
+        <View style={{ width: 3, backgroundColor: latestPaid ? colors.accent : colors.faint }} />
+        <View style={{ padding: spacing.xl, flex: 1 }}>
           {latestPaid ? (
             <>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>

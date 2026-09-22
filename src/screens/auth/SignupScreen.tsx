@@ -4,12 +4,10 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import AnimatedPressable from "../../components/AnimatedPressable";
 import { useAppAlert } from "../../components/AppAlert";
 import AppTextInput from "../../components/AppTextInput";
@@ -57,43 +55,20 @@ export default function SignupScreen({ navigation }: any) {
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" bounces={false}>
         <View style={{ height: HERO_HEIGHT, overflow: "hidden" }}>
-          <Svg width="100%" height="100%" style={{ position: "absolute" }}>
-            <Defs>
-              <LinearGradient id="heroSignup" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.accent} stopOpacity={isDark ? 0.3 : 0.15} />
-                <Stop offset="1" stopColor={colors.background} stopOpacity={1} />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#heroSignup)" />
-          </Svg>
-
-          <Ionicons
-            name="barbell"
-            size={130}
-            color={colors.accent}
-            style={{
-              position: "absolute",
-              top: -24,
-              right: -34,
-              opacity: isDark ? 0.14 : 0.08,
-              transform: [{ rotate: "22deg" }],
-            }}
-          />
-
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: spacing.lg }}>
             <View
               style={{
                 width: LOGO_WIDTH,
                 height: LOGO_HEIGHT,
-                borderRadius: radius.lg,
+                borderRadius: radius.md,
                 overflow: "hidden",
-                borderWidth: 2,
-                borderColor: colors.accent,
-                shadowColor: colors.accent,
-                shadowOpacity: isDark ? 0.5 : 0.3,
-                shadowRadius: 16,
-                shadowOffset: { width: 0, height: 6 },
-                elevation: 8,
+                borderWidth: 1.5,
+                borderColor: colors.border,
+                shadowColor: colors.shadow,
+                shadowOpacity: isDark ? 0.5 : 0.2,
+                shadowRadius: 10,
+                shadowOffset: { width: 0, height: 3 },
+                elevation: 3,
               }}
             >
               <Image
