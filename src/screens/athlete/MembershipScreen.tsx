@@ -110,12 +110,23 @@ export default function MembershipScreen({ navigation }: any) {
       setTimeout(load, 1500);
       alert("Payment received", "Confirming with your coach shortly.");
     } catch (err: any) {
-      if (err?.code !== undefined || err?.description) {
-        alert(
-          "Payment didn't go through",
-          err.description ?? "Please try again."
-        );
-      }
+      // Previously only alerted for errors shaped like Razorpay's own
+      // {code, description} — anything else (the create-razorpay-order
+      // function failing, a network error before the checkout sheet even
+      // opened, etc.) was silently swallowed: the button's spinner would
+      // just reset with no explanation, indistinguishable from the sheet
+      // never showing up at all. Always log and alert now, whatever the
+      // error shape, so a real failure is never mistaken for nothing
+      // happening.
+      console.error("Payment failed", err);
+      // react-native-razorpay rejects with { error: { code, description, ... } }
+      // — description is one level deeper than the {code, description} shape
+      // this used to assume, and Razorpay sometimes sets it to the literal
+      // string "undefined" rather than omitting it. Falling straight back to
+      // err.message in either case dumped the raw JSON error into the alert.
+      const description = err?.error?.description ?? err?.description;
+      const message = description && description !== "undefined" ? description : null;
+      alert("Payment didn't go through", message ?? "Please try again.");
     } finally {
       setPayingPlanId(null);
     }
